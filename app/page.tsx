@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PhotoGrid } from '@/components/photo-grid';
+import { mockPhotos, type Photo } from '@/lib/mock-photos';
 import styles from './page.module.css';
 
 const PERFIS = [
@@ -56,6 +58,23 @@ export default function HomePage() {
   const router = useRouter();
   const [menuAberto, setMenuAberto] = useState(false);
   const [busca, setBusca] = useState('');
+
+  // `null` = ainda carregando. O atraso simula a ida ao back-end para que o
+  // skeleton apareça; trocar por `fetch('/api/fotos')` quando ele existir.
+  const [fotos, setFotos] = useState<Photo[] | null>(null);
+
+  useEffect(() => {
+    const id = setTimeout(() => setFotos(mockPhotos), 800);
+    return () => clearTimeout(id);
+  }, []);
+
+  function alternarFavorita(fotoId: string) {
+    setFotos((atual) =>
+      atual?.map((foto) =>
+        foto.id === fotoId ? { ...foto, isFavorited: !foto.isFavorited } : foto,
+      ) ?? atual,
+    );
+  }
 
   function buscar(event: React.FormEvent) {
     event.preventDefault();
@@ -193,6 +212,20 @@ export default function HomePage() {
                 </Link>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className={styles.bloco}>
+          <div className={styles.wrap}>
+            <h2 className={styles.titulo}>Em destaque</h2>
+            <p className={styles.sub}>
+              Fotos com licença pronta para uso, direto de quem fotografou.
+            </p>
+            <PhotoGrid
+              photos={fotos ?? []}
+              loading={fotos === null}
+              onToggleFavorite={alternarFavorita}
+            />
           </div>
         </section>
 

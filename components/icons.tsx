@@ -98,6 +98,43 @@ export function IconMail(props: IconProps) {
   );
 }
 
+export function IconHeart(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M13.89 3.07a3.67 3.67 0 0 0-5.19 0L8 3.78l-.71-.71a3.67 3.67 0 0 0-5.19 5.19l.71.71L8 14.15l5.19-5.18.71-.71a3.67 3.67 0 0 0 0-5.19Z" />
+    </svg>
+  );
+}
+
+/** Coração preenchido: estado ativo do favoritar. */
+export function IconHeartFilled(props: IconProps) {
+  return (
+    <svg {...base} fill="currentColor" {...props}>
+      <path d="M13.89 3.07a3.67 3.67 0 0 0-5.19 0L8 3.78l-.71-.71a3.67 3.67 0 0 0-5.19 5.19l.71.71L8 14.15l5.19-5.18.71-.71a3.67 3.67 0 0 0 0-5.19Z" />
+    </svg>
+  );
+}
+
+/** Estrela da avaliação — dado, não ação: nunca em âmbar. */
+export function IconStar(props: IconProps) {
+  return (
+    <svg {...base} fill="currentColor" stroke="none" {...props}>
+      <path d="M8 1.33 10.06 5.51 14.67 6.18 11.33 9.43 12.12 14.01 8 11.85 3.88 14.01 4.67 9.43 1.33 6.18 5.94 5.51Z" />
+    </svg>
+  );
+}
+
+/** Fotograma vazio: ilustra o estado sem resultados. */
+export function IconImage(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="1.8" y="2.8" width="12.4" height="10.4" />
+      <circle cx="5.5" cy="6.3" r="1.1" />
+      <path d="m2.4 11.8 3.1-2.9 2.4 2.2 2.6-2.6 3.7 3.6" />
+    </svg>
+  );
+}
+
 /** Marca do Revela: quadro de exposição com sol de cianotipia. */
 export function BrandMark(props: IconProps) {
   return (

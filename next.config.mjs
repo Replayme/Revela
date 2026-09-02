@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  images: {
+    // Host das fotos de demonstração (lib/mock-photos.ts). Trocar pelo CDN do
+    // acervo quando as fotos reais entrarem.
+    remotePatterns: [{ protocol: 'https', hostname: 'picsum.photos' }],
+  },
   async headers() {
     return [
       {
