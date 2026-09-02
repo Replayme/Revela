@@ -38,7 +38,7 @@ export function PhotographerCard({
 
           {/* Retrato meio dentro da capa, meio no papel: costura as duas metades
               do card sem precisar de uma faixa divisória. */}
-          <div className="absolute -bottom-8 left-4 size-16 overflow-hidden rounded-full border-[3px] border-paper bg-prussia-800 sm:left-5">
+          <div className="absolute -bottom-8 left-4 size-16 overflow-hidden border-[3px] border-paper bg-prussia-800 sm:left-5">
             <Image
               src={photographer.avatarUrl}
               alt={`Retrato de ${photographer.name}`}
@@ -68,7 +68,7 @@ export function PhotographerCard({
 
           <p className="mt-auto pt-4">
             <Link
-              href={`/fotografo/${photographer.id}`}
+              href={`/perfil/${photographer.id}`}
               aria-label={`Ver o perfil de ${photographer.name}`}
               // Anel de foco no pseudo-elemento que cobre o card. O `!` em
               // outline-none é necessário: a regra de foco do globals.css está
@@ -93,7 +93,7 @@ export function PhotographerCardSkeleton() {
         aria-hidden
       >
         <div className="relative aspect-[4/3] bg-prussia-600/15">
-          <div className="absolute -bottom-8 left-4 size-16 rounded-full border-[3px] border-paper bg-prussia-600/20 sm:left-5" />
+          <div className="absolute -bottom-8 left-4 size-16 border-[3px] border-paper bg-prussia-600/20 sm:left-5" />
         </div>
         <div className="flex flex-1 flex-col px-4 pt-11 pb-4 sm:px-5">
           <div className="h-5 w-3/5 bg-prussia-600/15" />
