@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { PhotoGrid } from '@/components/photo-grid';
 import { CategoryGrid } from '@/components/category-grid';
 import { PhotographerGrid } from '@/components/photographer-grid';
+import { ValueSection } from '@/components/value-section';
 import { mockPhotos, type Photo } from '@/lib/mock-photos';
 import { mockCategories } from '@/lib/mock-categories';
 import { mockPhotographers } from '@/lib/mock-photographers';
@@ -244,6 +245,10 @@ export default function HomePage() {
             <PhotographerGrid photographers={mockPhotographers} />
           </div>
         </section>
+
+        {/* Sem `.bloco`/`.wrap`: a faixa escura sangra de ponta a ponta e traz
+            o próprio contêiner interno. */}
+        <ValueSection />
 
         <section className={styles.bloco}>
           <div className={styles.wrap}>

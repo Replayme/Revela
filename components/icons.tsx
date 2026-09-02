@@ -98,6 +98,44 @@ export function IconMail(props: IconProps) {
   );
 }
 
+export function IconPercent(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="5" cy="5" r="1.9" />
+      <circle cx="11" cy="11" r="1.9" />
+      <path d="M12.6 3.4 3.4 12.6" />
+    </svg>
+  );
+}
+
+export function IconShield(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M8 1.8 2.9 3.9v3.5c0 3 2 5.3 5.1 6.5 3.1-1.2 5.1-3.5 5.1-6.5V3.9L8 1.8Z" />
+      <path d="m5.9 7.8 1.5 1.5 2.9-3" />
+    </svg>
+  );
+}
+
+export function IconLicense(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M9.1 1.9H4.3a1 1 0 0 0-1 1v10.2a1 1 0 0 0 1 1h7.4a1 1 0 0 0 1-1V5.4L9.1 1.9Z" />
+      <path d="M9 2.1v3.4h3.5" />
+      <path d="M5.8 8.9h4.4" />
+      <path d="M5.8 11.2h3" />
+    </svg>
+  );
+}
+
+export function IconChat(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M13.4 9.4a1.3 1.3 0 0 1-1.3 1.3H5.3L2.6 13.3V3.9a1.3 1.3 0 0 1 1.3-1.3h8.2a1.3 1.3 0 0 1 1.3 1.3v5.5Z" />
+    </svg>
+  );
+}
+
 export function IconHeart(props: IconProps) {
   return (
     <svg {...base} {...props}>

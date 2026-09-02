@@ -21,9 +21,9 @@
   font-family: var(--sans);
 }
 
-.pagina a {
-  color: inherit;
-}
+/* Os links herdam a cor pelo preflight do Tailwind (`@layer base`), que é o
+   lugar certo: repetir a regra aqui, fora de camada, faria ela vencer qualquer
+   utilitário de cor aplicado a um link dentro da home. */
 
 .grao {
   position: fixed;
