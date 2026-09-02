@@ -1,9 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { FilmFrame } from './film-frame';
+import { formatCount } from '@/lib/format';
 import type { Category } from '@/lib/mock-categories';
-
-const count = new Intl.NumberFormat('pt-BR');
 
 /** Quatro colunas no desktop, duas no celular. */
 const SIZES =
@@ -57,7 +56,7 @@ export function CategoryCard({ category }: { category: Category }) {
               {category.name}
             </h3>
             <p className="mt-0.5 text-xs tabular-nums text-paper/70">
-              {count.format(category.photoCount)} fotos
+              {formatCount(category.photoCount)} fotos
             </p>
           </div>
         </div>

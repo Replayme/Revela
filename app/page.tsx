@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PhotoGrid } from '@/components/photo-grid';
 import { CategoryGrid } from '@/components/category-grid';
+import { PhotographerGrid } from '@/components/photographer-grid';
 import { mockPhotos, type Photo } from '@/lib/mock-photos';
 import { mockCategories } from '@/lib/mock-categories';
+import { mockPhotographers } from '@/lib/mock-photographers';
 import styles from './page.module.css';
 
 const PERFIS = [
@@ -234,6 +236,12 @@ export default function HomePage() {
         <section className={styles.bloco}>
           <div className={styles.wrap}>
             <CategoryGrid categories={mockCategories} />
+          </div>
+        </section>
+
+        <section className={styles.bloco}>
+          <div className={styles.wrap}>
+            <PhotographerGrid photographers={mockPhotographers} />
           </div>
         </section>
 

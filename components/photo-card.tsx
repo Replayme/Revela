@@ -4,17 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FilmFrame } from './film-frame';
 import { IconHeart, IconHeartFilled, IconStar } from './icons';
+import { formatPrice, formatRating } from '@/lib/format';
 import type { Photo } from '@/lib/mock-photos';
-
-const price = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-const rating = new Intl.NumberFormat('pt-BR', {
-  minimumFractionDigits: 1,
-  maximumFractionDigits: 1,
-});
 
 /** Quatro colunas no desktop, uma no celular — o navegador escolhe o corte. */
 const SIZES =
@@ -79,13 +70,13 @@ export function PhotoCard({
 
           <div className="mt-auto flex items-baseline justify-between gap-3 border-t border-prussia-800/12 pt-3.5">
             <span className="font-mono text-base font-semibold tabular-nums text-prussia-900">
-              {price.format(photo.price)}
+              {formatPrice(photo.price)}
             </span>
             <span
               className="flex items-center gap-1.5 text-sm tabular-nums text-prussia-600"
-              aria-label={`Avaliação ${rating.format(photo.rating)} de 5`}
+              aria-label={`Avaliação ${formatRating(photo.rating)} de 5`}
             >
-              {rating.format(photo.rating)}
+              {formatRating(photo.rating)}
               <IconStar width={13} height={13} />
             </span>
           </div>
