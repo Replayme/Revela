@@ -9,11 +9,17 @@ export function FilmFrame({
   children,
   edgeCode = 'REVELA 400',
   frameNumber = '12A',
+  markings = true,
   className = '',
 }: {
   children: ReactNode;
   edgeCode?: string;
   frameNumber?: string;
+  /**
+   * Marcação de borda do negativo ("REVELA 400 ▸ 12A"). Desligue onde o selo
+   * não deve se repetir: ele identifica a foto do acervo, não a moldura.
+   */
+  markings?: boolean;
   className?: string;
 }) {
   return (
@@ -28,19 +34,29 @@ export function FilmFrame({
           junto e as marcações de borda ficam alinhadas entre os cards. */}
       <div className="mx-5 flex flex-1 flex-col border-x border-prussia-800/25 sm:mx-9">
         {/* marcação de borda do negativo */}
-        <div className="flex items-center justify-between px-5 py-1.5 font-mono text-[9px] tracking-[0.22em] text-paper-500 uppercase sm:px-8">
-          <span>{edgeCode}</span>
-          <span aria-hidden>▸ {frameNumber}</span>
-        </div>
+        {markings ? (
+          <div className="flex items-center justify-between px-5 py-1.5 font-mono text-[9px] tracking-[0.22em] text-paper-500 uppercase sm:px-8">
+            <span>{edgeCode}</span>
+            <span aria-hidden>▸ {frameNumber}</span>
+          </div>
+        ) : (
+          // Sem o selo, o papel encostaria no topo da moldura: a folga mantém
+          // a proporção de fotograma.
+          <div aria-hidden className="h-2" />
+        )}
 
         <div className="tex-paper flex-1 bg-paper text-prussia-900">
           {children}
         </div>
 
-        <div className="flex items-center justify-between px-5 py-1.5 font-mono text-[9px] tracking-[0.22em] text-paper-500 uppercase sm:px-8">
-          <span aria-hidden>{frameNumber} ◂</span>
-          <span>{edgeCode}</span>
-        </div>
+        {markings ? (
+          <div className="flex items-center justify-between px-5 py-1.5 font-mono text-[9px] tracking-[0.22em] text-paper-500 uppercase sm:px-8">
+            <span aria-hidden>{frameNumber} ◂</span>
+            <span>{edgeCode}</span>
+          </div>
+        ) : (
+          <div aria-hidden className="h-2" />
+        )}
       </div>
     </section>
   );

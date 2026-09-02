@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PhotoGrid } from '@/components/photo-grid';
+import { CategoryGrid } from '@/components/category-grid';
 import { mockPhotos, type Photo } from '@/lib/mock-photos';
+import { mockCategories } from '@/lib/mock-categories';
 import styles from './page.module.css';
 
 const PERFIS = [
@@ -226,6 +228,12 @@ export default function HomePage() {
               loading={fotos === null}
               onToggleFavorite={alternarFavorita}
             />
+          </div>
+        </section>
+
+        <section className={styles.bloco}>
+          <div className={styles.wrap}>
+            <CategoryGrid categories={mockCategories} />
           </div>
         </section>
 
