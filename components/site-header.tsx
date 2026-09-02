@@ -8,7 +8,7 @@ import { IconSearch } from './icons';
 import type { MessageKey } from '@/lib/i18n';
 
 const NAV: { key: MessageKey; href: string }[] = [
-  { key: 'header.nav.explore', href: '/' },
+  { key: 'header.nav.explore', href: '/explorar' },
   { key: 'header.nav.photographers', href: '/' },
   { key: 'header.nav.collections', href: '/' },
   { key: 'header.nav.pricing', href: '/' },
