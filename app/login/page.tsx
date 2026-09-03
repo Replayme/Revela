@@ -258,7 +258,7 @@ export default function LoginPage() {
             <p className="text-sm text-prussia-700/85">
               {t('login.noAccount')}{' '}
               <Link
-                href="/login"
+                href="/cadastro-fotografo"
                 className="font-semibold text-prussia-900 underline decoration-amber decoration-2 underline-offset-4"
               >
                 {t('login.createAccount')}

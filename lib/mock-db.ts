@@ -70,6 +70,38 @@ export function findUserByEmail(email: string): User | undefined {
   return users.find((u) => u.email === normalized);
 }
 
+export type CreateUserResult =
+  | { ok: true; user: User }
+  | { ok: false; reason: 'EMAIL_TAKEN' };
+
+/**
+ * Cria a conta do fotógrafo.
+ *
+ * O e-mail é normalizado (minúsculas, sem espaços nas pontas) antes de virar
+ * chave: sem isso "Ana@Revela.com" abriria uma segunda conta e ninguém mais
+ * conseguiria entrar em nenhuma das duas com certeza.
+ *
+ * Em produção a unicidade tem que ser um índice único na coluna, não esta
+ * verificação — entre o `findUserByEmail` e o `push` cabe outra requisição.
+ */
+export function createUser(input: {
+  name: string;
+  email: string;
+  password: string;
+}): CreateUserResult {
+  const email = input.email.trim().toLowerCase();
+  if (findUserByEmail(email)) return { ok: false, reason: 'EMAIL_TAKEN' };
+
+  const user: User = {
+    id: `usr_${randomBytes(8).toString('hex')}`,
+    name: input.name.trim(),
+    email,
+    passwordHash: hashPassword(input.password),
+  };
+  users.push(user);
+  return { ok: true, user };
+}
+
 export function updatePassword(userId: string, password: string): boolean {
   const user = users.find((u) => u.id === userId);
   if (!user) return false;

@@ -56,7 +56,7 @@ fecha. Com `remember`, dura 30 dias.
 | ---- | ---------------------- | ----------------------------------------- | --------------------- |
 | 400  | `VALIDATION`           | Payload malformado ou fora das regras     | `fields`              |
 | 401  | `INVALID_PASSWORD`     | E-mail existe, senha errada               | `attemptsLeft`        |
-| 401  | `INVALID_CREDENTIALS`  | Modo sem enumeração (ver §6)              | `attemptsLeft`        |
+| 401  | `INVALID_CREDENTIALS`  | Modo sem enumeração (ver §7)              | `attemptsLeft`        |
 | 403  | `ACCOUNT_DISABLED`     | Conta suspensa ou banida                  | —                     |
 | 404  | `EMAIL_NOT_FOUND`      | Não existe conta com esse e-mail          | `attemptsLeft`        |
 | 429  | `RATE_LIMITED`         | Estourou 5 tentativas em 15 min           | `retryAfterSeconds`   |
@@ -71,7 +71,83 @@ sem quebrar a tela.
 
 ---
 
-## 2. `POST /api/auth/forgot-password`
+## 2. `POST /api/auth/register`
+
+Cria a conta do fotógrafo e já abre a sessão — obrigar a fazer login logo
+depois de criar a conta é pedir a mesma senha duas vezes seguidas.
+
+**Request**
+
+```json
+{
+  "name": "Ana Vilar",
+  "email": "ana@estudio.com",
+  "password": "umaSenhaBoa1",
+  "passwordConfirmation": "umaSenhaBoa1",
+  "acceptedTerms": true
+}
+```
+
+| Campo                  | Tipo    | Regra                                                        |
+| ---------------------- | ------- | ------------------------------------------------------------ |
+| `name`                 | string  | Obrigatório, 2 a 80 caracteres. É o crédito público da foto. |
+| `email`                | string  | Obrigatório, formato de e-mail, no máximo 254 caracteres.    |
+| `password`             | string  | Obrigatório, mínimo 6 caracteres.                             |
+| `passwordConfirmation` | string  | Obrigatório, idêntico a `password`.                           |
+| `acceptedTerms`        | boolean | Obrigatório, precisa ser `true`.                              |
+
+O e-mail é normalizado (minúsculas, sem espaços nas pontas) antes de virar
+chave. A unicidade tem que ser **índice único na coluna**, não uma consulta
+antes do insert: entre a consulta e a escrita cabe outra requisição.
+
+**201 — conta criada**
+
+```json
+{
+  "user": { "id": "usr_9f2c…", "name": "Ana Vilar", "email": "ana@estudio.com" },
+  "redirectTo": "/dashboard"
+}
+```
+
+Junto vai o mesmo cookie de sessão do login, sem `remember` (12 horas):
+
+```
+Set-Cookie: revela_session=<token>; HttpOnly; Secure; SameSite=Lax; Path=/;
+            Max-Age=43200
+```
+
+**202 — modo sem enumeração**
+
+Quando `REVEAL_ACCOUNT_EXISTENCE` é `false` e o e-mail já tem conta, a resposta
+é `{ "pending": true }` — a mesma que o endereço tivesse ou não conta. Quem já
+tem conta recebe um aviso por e-mail em vez de uma conta nova. Ver §7.
+
+**Erros**
+
+| HTTP | `error`        | Quando                                        | Campos extras       |
+| ---- | -------------- | --------------------------------------------- | ------------------- |
+| 400  | `VALIDATION`   | Payload malformado ou fora das regras         | `fields`            |
+| 409  | `EMAIL_TAKEN`  | E-mail já cadastrado (modo com enumeração)    | —                   |
+| 429  | `RATE_LIMITED` | Estourou 5 tentativas em 15 min               | `retryAfterSeconds` |
+| 429  | `IP_BLOCKED`   | IP bloqueado por força bruta                  | `retryAfterSeconds` |
+| 5xx  | qualquer       | Falha do servidor                             | —                   |
+
+`fields` traz uma chave por campo do request, com `"invalid"` ou `null` —
+inclusive `acceptedTerms`.
+
+O cadastro usa o **mesmo rate limit do login** (§8): criar conta escreve no
+banco e dispara e-mail, então sem teto vira o endpoint mais barato de abusar.
+
+**O que falta para produção**
+
+- Confirmação de e-mail antes de publicar qualquer foto — hoje a conta já nasce
+  ativa. O token de confirmação segue o mesmo desenho do de reset (§4): guardado
+  como hash, com prazo e uso único.
+- Registrar a versão dos termos aceita e a data do aceite, não só o booleano.
+
+---
+
+## 3. `POST /api/auth/forgot-password`
 
 ```json
 { "email": "ana@revela.com" }
@@ -94,7 +170,7 @@ O e-mail enviado contém `https://<dominio>/redefinir-senha?token=<token>`.
 
 ---
 
-## 3. `POST /api/auth/reset-password`
+## 4. `POST /api/auth/reset-password`
 
 ```json
 {
@@ -118,7 +194,7 @@ descobre um acesso indevido.
 
 ---
 
-## 4. `POST /api/auth/logout`
+## 5. `POST /api/auth/logout`
 
 Sem corpo. Responde 200 e devolve o cookie zerado (`Max-Age=0`). Se houver
 refresh token no servidor, revogue-o aqui — apagar o cookie do navegador não
@@ -126,7 +202,7 @@ encerra nada do lado do servidor.
 
 ---
 
-## 5. Armazenamento de senha
+## 6. Armazenamento de senha
 
 Nunca em texto plano, nunca com SHA-256 "puro" (rápido demais, quebra em
 GPU). Use uma função de derivação com custo:
@@ -152,7 +228,7 @@ em tempo constante — serve de referência, mas troque por argon2id em produç�
 
 ---
 
-## 6. Enumeração de contas — uma decisão a tomar
+## 7. Enumeração de contas — uma decisão a tomar
 
 A tela pede mensagens distintas: **"E-mail não encontrado"** e
 **"Senha incorreta"**. Elas são melhores de usar — a pessoa sabe se errou o
@@ -174,7 +250,7 @@ front-end já trata os dois códigos.
 
 ---
 
-## 7. Rate limiting e força bruta
+## 8. Rate limiting e força bruta
 
 Duas camadas, ambas implementadas em `lib/rate-limit.ts`:
 
@@ -201,7 +277,7 @@ Detalhes que importam:
 
 ---
 
-## 8. Sessão
+## 9. Sessão
 
 O token vai em **cookie `HttpOnly`**, não em `localStorage`. Token em
 `localStorage` é legível por qualquer script da página — uma falha de XSS
@@ -228,7 +304,7 @@ assim a validação acontece antes de qualquer render.
 
 ---
 
-## 9. HTTPS
+## 10. HTTPS
 
 Obrigatório em produção, inclusive nos ambientes de homologação que recebem
 senha real.
@@ -241,7 +317,7 @@ senha real.
 
 ---
 
-## 10. Checklist antes de ir ao ar
+## 11. Checklist antes de ir ao ar
 
 - [ ] Trocar `lib/mock-db.ts` por banco real com argon2id
 - [ ] Rate limiting em Redis ou no gateway, não em memória
@@ -251,6 +327,6 @@ senha real.
 - [ ] `devResetUrl` nunca sai em produção
 - [ ] Log de tentativas de login (IP, user agent, resultado) sem gravar a senha
 - [ ] Alerta por e-mail em login de dispositivo novo e em troca de senha
-- [ ] Decidir §6 (enumeração) e registrar a decisão
+- [ ] Decidir §7 (enumeração) e registrar a decisão
 - [ ] `middleware.ts` protegendo `/dashboard` e demais rotas privadas
 - [ ] Testar com teclado e leitor de tela: foco visível, erros anunciados

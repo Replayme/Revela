@@ -203,8 +203,15 @@ export function Checkbox({
   id,
   ...inputProps
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'className'> & {
-  label: string;
+  /**
+   * Aceita conteúdo, não só texto: o aceite dos termos precisa dos links
+   * dentro da frase. Clicar num link dentro de um `<label>` navega em vez de
+   * marcar a caixa — a especificação isenta conteúdo interativo.
+   */
+  label: ReactNode;
   hint?: string;
+  /** React 19 aceita `ref` como prop normal em componentes de função. */
+  ref?: Ref<HTMLInputElement>;
 }) {
   const generatedId = useId();
   const fieldId = id ?? generatedId;

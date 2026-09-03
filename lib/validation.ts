@@ -7,6 +7,8 @@ import type { MessageKey } from './i18n';
  */
 
 export const PASSWORD_MIN_LENGTH = 6;
+export const NAME_MIN_LENGTH = 2;
+export const NAME_MAX_LENGTH = 80;
 
 // Pragmático e alinhado ao que os navegadores aceitam em input[type=email].
 // Validação definitiva de e-mail é sempre a confirmação por link.
@@ -20,6 +22,18 @@ export function isValidEmail(value: string): boolean {
 export function validateEmail(value: string): MessageKey | null {
   if (!value.trim()) return 'validation.emailRequired';
   if (!isValidEmail(value)) return 'validation.emailInvalid';
+  return null;
+}
+
+/**
+ * Nome público do fotógrafo — é o que assina a foto no acervo.
+ * Só exige que exista e caiba no campo: nome de pessoa não tem formato.
+ */
+export function validateName(value: string): MessageKey | null {
+  const name = value.trim();
+  if (!name) return 'validation.nameRequired';
+  if (name.length < NAME_MIN_LENGTH) return 'validation.nameShort';
+  if (name.length > NAME_MAX_LENGTH) return 'validation.nameLong';
   return null;
 }
 

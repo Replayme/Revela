@@ -23,10 +23,12 @@ Contas de demonstração:
 | Rota                | O que é                                                     |
 | ------------------- | ----------------------------------------------------------- |
 | `/login`            | **A entrega.** Login com validação, estados e i18n.          |
+| `/cadastro-fotografo` | Criação de conta; já abre a sessão e leva ao painel.       |
 | `/esqueci-senha`    | Pedido de redefinição.                                       |
 | `/redefinir-senha`  | Nova senha via token (24 h, uso único).                      |
 | `/dashboard`        | Destino do redirecionamento; exemplo de rota protegida.      |
-| `/`                 | Home mínima, só para mostrar o header no peso cheio.         |
+| `/`                 | Home: destaques, categorias, fotógrafos e seção de valor.    |
+| `/explorar`         | Busca do acervo com filtros.                                 |
 | `/api/auth/*`       | **Mock** das rotas — implementa `docs/API.md` para os testes.|
 
 O back-end real está especificado em [`docs/API.md`](docs/API.md): endpoints,
@@ -109,7 +111,7 @@ guardada em `localStorage` e detecção pelo idioma do navegador.
 | `method="post"` nos formulários | evita a senha ir parar na URL se o JS ainda não hidratou |
 
 **O mock é mock.** Rate limit em memória não sobrevive a duas instâncias, e o
-"banco" some a cada restart. `docs/API.md` §7 e §10 dizem o que trocar.
+"banco" some a cada restart. `docs/API.md` §8 e §11 dizem o que trocar.
 
 ---
 
@@ -122,7 +124,7 @@ REVEAL_ACCOUNT_EXISTENCE=true   # false = "E-mail ou senha incorretos" nos dois 
 
 Sobre `REVEAL_ACCOUNT_EXISTENCE`: mensagens distintas são melhores de usar e
 foi assim que a tela foi pedida, mas permitem descobrir quais e-mails têm
-conta no site. `docs/API.md` §6 explica quando vale a pena mudar.
+conta no site. `docs/API.md` §7 explica quando vale a pena mudar.
 
 ---
 
