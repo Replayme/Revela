@@ -28,3 +28,7 @@ export const mockPhotographers: Photographer[] = CATALOG.map(
     coverPhotoUrl: `https://picsum.photos/seed/${photographer.id}-cover/800/600`,
   }),
 );
+
+export function findPhotographer(id: string): Photographer | undefined {
+  return mockPhotographers.find((photographer) => photographer.id === id);
+}

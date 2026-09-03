@@ -175,6 +175,11 @@ export default function HomePage() {
               <li>
                 <Link href="/blog">Blog</Link> <span className={styles.dica}>dicas de fotografia</span>
               </li>
+              {/* No celular o header esconde o "Entrar"; sem esta entrada quem
+                  já tem conta não teria como fazer login pela home. */}
+              <li className={styles.entrarMovel}>
+                <Link href="/login">Entrar</Link>
+              </li>
               <li>
                 <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/cadastro-fotografo">
                   Cadastre-se como fotógrafo

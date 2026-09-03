@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthShell } from '@/components/auth-shell';
 import { FilmFrame } from '@/components/film-frame';
 import {
@@ -19,9 +19,31 @@ import { validateEmail, validatePassword } from '@/lib/validation';
 
 type ServerError = { key: MessageKey; vars?: Record<string, string | number> };
 
+/**
+ * `?next=` devolve a pessoa para onde ela estava — quem clicou em "Entrar para
+ * comprar" numa foto volta para aquela foto, não para o painel.
+ *
+ * Só caminhos internos são aceitos: um `next` com host próprio transformaria o
+ * login num trampolim para phishing ("entre no Revela" e caia em outro site).
+ */
+function safeNext(value: string | null): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
+  return value;
+}
+
+/** `useSearchParams` precisa de um limite de Suspense para a página prerenderizar. */
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const { t } = useLocale();
   const router = useRouter();
+  const next = safeNext(useSearchParams().get('next'));
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -90,9 +112,10 @@ export default function LoginPage() {
 
       if (response.ok) {
         setStatus('success');
-        // Redirecionamento automático para o painel.
+        // Redirecionamento automático: de volta para onde a pessoa estava,
+        // ou para o painel quando ela entrou direto pelo login.
         setTimeout(() => {
-          router.push(data.redirectTo ?? '/dashboard');
+          router.push(next ?? data.redirectTo ?? '/dashboard');
         }, 900);
         return;
       }

@@ -1,8 +1,8 @@
 'use client';
 
-import { Fragment, useRef, useState, type FormEvent } from 'react';
+import { Fragment, Suspense, useRef, useState, type FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AuthShell } from '@/components/auth-shell';
 import { FilmFrame } from '@/components/film-frame';
 import {
@@ -24,9 +24,25 @@ import {
 
 type ServerError = { key: MessageKey; vars?: Record<string, string | number> };
 
+/** Só caminhos internos: `next` com host próprio viraria trampolim de phishing. */
+function safeNext(value: string | null): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
+  return value;
+}
+
+/** `useSearchParams` precisa de um limite de Suspense para a página prerenderizar. */
 export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
   const { t } = useLocale();
   const router = useRouter();
+  const next = safeNext(useSearchParams().get('next'));
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -107,7 +123,7 @@ export default function SignUpPage() {
       if (response.ok) {
         setStatus('success');
         setTimeout(() => {
-          router.push(data.redirectTo ?? '/dashboard');
+          router.push(next ?? data.redirectTo ?? '/dashboard');
         }, 900);
         return;
       }

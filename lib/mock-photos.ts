@@ -167,3 +167,11 @@ export const mockPhotos: Photo[] = CATALOG.map((photo) => ({
   ...photo,
   thumbnailUrl: thumbnailFor(photo.id),
 }));
+
+export function findPhoto(id: string): Photo | undefined {
+  return mockPhotos.find((photo) => photo.id === id);
+}
+
+export function photosByPhotographer(photographerId: string): Photo[] {
+  return mockPhotos.filter((photo) => photo.photographer.id === photographerId);
+}

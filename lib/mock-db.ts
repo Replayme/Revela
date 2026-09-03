@@ -42,8 +42,31 @@ export function verifyPassword(password: string, stored: string): boolean {
   return timingSafeEqual(derived, expected);
 }
 
+/**
+ * Estado mutável do mock, guardado no `globalThis`.
+ *
+ * Rotas de API e componentes de servidor são empacotados separadamente: cada
+ * bundle carrega a sua cópia deste módulo, com o seu próprio array. Sem um
+ * ponto comum, a compra registrada pela rota some quando a página vai ler —
+ * foi exatamente o que aconteceu no teste. `globalThis` é o mesmo objeto para
+ * todos os bundles do processo; é o truque que a documentação do Prisma usa
+ * pelo mesmo motivo.
+ *
+ * Continua valendo para UM processo. Em serverless cada instância tem a sua
+ * memória, e nem isto salva — é mais uma razão para o banco real entrar aqui.
+ */
+interface MockStore {
+  users: User[];
+  orders: Order[];
+  resetTokens: Map<string, ResetRecord>;
+}
+
+const globalStore = globalThis as typeof globalThis & {
+  __revelaMockStore?: MockStore;
+};
+
 // Contas de demonstração.
-const users: User[] = [
+const seedUsers: User[] = [
   {
     id: 'usr_ana',
     name: 'Ana Ribeiro',
@@ -65,9 +88,15 @@ const users: User[] = [
   },
 ];
 
+const store: MockStore = (globalStore.__revelaMockStore ??= {
+  users: seedUsers,
+  orders: [],
+  resetTokens: new Map(),
+});
+
 export function findUserByEmail(email: string): User | undefined {
   const normalized = email.trim().toLowerCase();
-  return users.find((u) => u.email === normalized);
+  return store.users.find((u) => u.email === normalized);
 }
 
 export type CreateUserResult =
@@ -98,12 +127,12 @@ export function createUser(input: {
     email,
     passwordHash: hashPassword(input.password),
   };
-  users.push(user);
+  store.users.push(user);
   return { ok: true, user };
 }
 
 export function updatePassword(userId: string, password: string): boolean {
-  const user = users.find((u) => u.id === userId);
+  const user = store.users.find((u) => u.id === userId);
   if (!user) return false;
   user.passwordHash = hashPassword(password);
   return true;
@@ -118,8 +147,6 @@ interface ResetRecord {
   usedAt?: number;
 }
 
-const resetTokens = new Map<string, ResetRecord>();
-
 function hashToken(token: string): string {
   return createHmac('sha256', SESSION_SECRET).update(token).digest('hex');
 }
@@ -128,7 +155,7 @@ function hashToken(token: string): string {
 export function createResetToken(userId: string): string {
   const token = randomBytes(32).toString('base64url');
   const tokenHash = hashToken(token);
-  resetTokens.set(tokenHash, {
+  store.resetTokens.set(tokenHash, {
     userId,
     tokenHash,
     expiresAt: Date.now() + RESET_TOKEN_TTL_MS,
@@ -141,15 +168,51 @@ export type ResetCheck =
   | { ok: false; reason: 'TOKEN_INVALID' | 'TOKEN_EXPIRED' };
 
 export function consumeResetToken(token: string): ResetCheck {
-  const record = resetTokens.get(hashToken(token));
+  const record = store.resetTokens.get(hashToken(token));
   if (!record || record.usedAt) return { ok: false, reason: 'TOKEN_INVALID' };
   if (record.expiresAt < Date.now()) {
-    resetTokens.delete(record.tokenHash);
+    store.resetTokens.delete(record.tokenHash);
     return { ok: false, reason: 'TOKEN_EXPIRED' };
   }
   record.usedAt = Date.now();
-  resetTokens.delete(record.tokenHash);
+  store.resetTokens.delete(record.tokenHash);
   return { ok: true, userId: record.userId };
+}
+
+/* -------------------------------- pedidos -------------------------------- */
+
+export interface Order {
+  id: string;
+  userId: string;
+  photoId: string;
+  /** Preço no momento da compra: mudar a tabela não muda o que já foi pago. */
+  pricePaid: number;
+  /** Versão da licença aceita: reescrever o texto não altera pedidos antigos. */
+  licenseVersion: string;
+  createdAt: number;
+}
+
+export function createOrder(input: {
+  userId: string;
+  photoId: string;
+  pricePaid: number;
+  licenseVersion: string;
+}): Order {
+  const order: Order = {
+    id: `ord_${randomBytes(8).toString('hex')}`,
+    createdAt: Date.now(),
+    ...input,
+  };
+  store.orders.push(order);
+  return order;
+}
+
+export function findOrder(userId: string, photoId: string): Order | undefined {
+  return store.orders.find((o) => o.userId === userId && o.photoId === photoId);
+}
+
+export function ordersByUser(userId: string): Order[] {
+  return store.orders.filter((o) => o.userId === userId);
 }
 
 /* -------------------------------- sessão --------------------------------- */
