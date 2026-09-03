@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { IconCheck, IconAlert } from '@/components/icons';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 
@@ -99,6 +100,7 @@ export default function LicensePage() {
           </p>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

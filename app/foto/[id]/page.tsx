@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { BuyButton } from '@/components/buy-button';
 import { IconCheck, IconStar } from '@/components/icons';
 import { findOrder } from '@/lib/mock-db';
@@ -9,7 +10,7 @@ import { findPhoto, mockPhotos, photosByPhotographer } from '@/lib/mock-photos';
 import { findPhotographer } from '@/lib/mock-photographers';
 import { UNIVERSAL_LICENSE, licenseLabel } from '@/lib/license';
 import { currentSession } from '@/lib/session';
-import { formatPrice, formatRating } from '@/lib/format';
+import { formatCount, formatPrice, formatRating } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +108,12 @@ export default async function PhotoPage({
                     photo.orientation === 'vertical' ? 'Vertical' : 'Horizontal'
                   }
                 />
-                <Dado rotulo="Resolução" valor="4096 × 2731 px" />
+                {/* Vinha fixo em "4096 × 2731 px": a mesma medida em toda
+                    foto, e de paisagem mesmo nas verticais. */}
+                <Dado
+                  rotulo="Resolução"
+                  valor={`${formatCount(photo.width)} × ${formatCount(photo.height)} px`}
+                />
                 <Dado
                   rotulo="Avaliação"
                   valor={
@@ -212,6 +218,7 @@ export default async function PhotoPage({
           )}
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

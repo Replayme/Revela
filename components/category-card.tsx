@@ -26,7 +26,7 @@ export function CategoryCard({ category }: { category: Category }) {
         necessário porque a regra de foco do globals.css está fora de @layer.
       */}
       <Link
-        href={`/catalogo?categoria=${category.slug}`}
+        href={`/explorar?categoria=${category.slug}`}
         className="block after:absolute after:inset-0 focus-visible:outline-none! focus-visible:after:[outline:2px_solid_var(--color-amber)] focus-visible:after:[outline-offset:2px]"
       >
         <div className="relative aspect-square overflow-hidden bg-prussia-900">

@@ -1,6 +1,15 @@
+import { mockPhotos } from './mock-photos';
+
 /**
- * Categorias do acervo. Fixas por enquanto — quando vierem do back-end, a
- * interface `Category` já é o formato esperado na resposta.
+ * As categorias do acervo, **derivadas das fotos**.
+ *
+ * Antes esta lista era escrita à mão e trazia outro vocabulário — Natureza,
+ * Negócios, Viagens — que não batia com nenhuma categoria das fotos. O cartão
+ * da home levava para uma busca que não tinha resultado nenhum. Derivar da
+ * fonte é o que garante que todo filtro oferecido tem o que mostrar.
+ *
+ * Quando o acervo vier do back-end, esta lista vem com ele (um `GROUP BY`), e
+ * a interface `Category` já é o formato esperado na resposta.
  */
 
 export interface Category {
@@ -11,23 +20,38 @@ export interface Category {
   thumbnailUrl: string;
 }
 
-/** Imagem determinística por slug — o mesmo slug devolve sempre a mesma foto. */
-function thumbnailFor(slug: string): string {
-  return `https://picsum.photos/seed/${slug}/600/600`;
+/** "Arquitetura e imóveis" → "arquitetura-e-imoveis". */
+export function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
-const CATALOG: Omit<Category, 'thumbnailUrl'>[] = [
-  { id: 'c-01', name: 'Natureza', slug: 'natureza', photoCount: 2480 },
-  { id: 'c-02', name: 'Negócios', slug: 'negocios', photoCount: 1240 },
-  { id: 'c-03', name: 'Viagens', slug: 'viagens', photoCount: 1875 },
-  { id: 'c-04', name: 'Pessoas', slug: 'pessoas', photoCount: 2113 },
-  { id: 'c-05', name: 'Tecnologia', slug: 'tecnologia', photoCount: 964 },
-  { id: 'c-06', name: 'Alimentos', slug: 'alimentos', photoCount: 1432 },
-  { id: 'c-07', name: 'Esportes', slug: 'esportes', photoCount: 387 },
-  { id: 'c-08', name: 'Arquitetura', slug: 'arquitetura', photoCount: 1698 },
-];
+export const mockCategories: Category[] = (() => {
+  const porNome = new Map<string, { count: number; seed: string }>();
 
-export const mockCategories: Category[] = CATALOG.map((category) => ({
-  ...category,
-  thumbnailUrl: thumbnailFor(category.slug),
-}));
+  for (const photo of mockPhotos) {
+    const atual = porNome.get(photo.category);
+    if (atual) atual.count += 1;
+    // A capa da categoria é a primeira foto dela: o cartão mostra o acervo
+    // que promete, não uma imagem avulsa.
+    else porNome.set(photo.category, { count: 1, seed: photo.id });
+  }
+
+  return [...porNome.entries()]
+    .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0], 'pt-BR'))
+    .map(([name, { count, seed }], index) => ({
+      id: `c-${String(index + 1).padStart(2, '0')}`,
+      name,
+      slug: slugify(name),
+      photoCount: count,
+      thumbnailUrl: `https://picsum.photos/seed/${seed}/600/600`,
+    }));
+})();
+
+export function findCategory(slug: string): Category | undefined {
+  return mockCategories.find((category) => category.slug === slug);
+}

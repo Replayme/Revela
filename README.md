@@ -29,7 +29,7 @@ Contas de demonstração:
 | `/dashboard`        | Painel da conta: as licenças compradas. Rota protegida.      |
 | `/pedido/{id}`      | Recibo de um pedido: dados da compra, licença aceita, arquivo.|
 | `/`                 | Home: destaques, categorias, fotógrafos e seção de valor.    |
-| `/explorar`         | Busca do acervo com filtros.                                 |
+| `/explorar`         | O acervo: busca, filtros e ordenação. Estado na URL.         |
 | `/foto/{id}`        | Página da foto, com a compra.                                |
 | `/api/auth/*`       | **Mock** das rotas — implementa `docs/API.md` para os testes.|
 | `/api/pedidos/*`    | **Mock** da compra e da entrega do arquivo (`docs/API.md` §11).|
@@ -112,7 +112,15 @@ mensagem já reservado para o layout não pular. Respeita
 a partir de `lg`. Inputs a 16px, que é o que evita o zoom automático do iOS.
 
 **Idioma** — português e inglês, alternador PT/EN no header, preferência
-guardada em `localStorage` e detecção pelo idioma do navegador.
+guardada em `localStorage`.
+
+A detecção pelo idioma do navegador foi **desligada de propósito**: só o header
+e as telas de acesso estão traduzidos, e o resto do site (acervo, foto, perfil,
+painel, recibo, licença) é texto fixo em português. Detectar `en` entregava, a
+qualquer visitante de navegador em inglês, um header em inglês sobre um site em
+português — sem que ninguém tivesse pedido. São quatro linhas em
+`components/locale-provider.tsx` para religar quando o conteúdo estiver
+traduzido.
 
 ---
 
@@ -134,6 +142,23 @@ guardada em `localStorage` e detecção pelo idioma do navegador.
 
 ---
 
+## O que ainda destoa
+
+**A home tem header próprio.** Ela usa `app/page.module.css` (faixa clara, busca
+com botão sólido); todo o resto usa `components/site-header.tsx` (faixa escura
+de duas linhas). Os dois já sabem quem está logado e apontam para as mesmas
+rotas, mas são dois componentes. Unificar é uma decisão de desenho — a home
+clara funciona como abertura, e escurecê-la muda o tom da primeira tela.
+
+**Os números da home e do painel lateral são placeholders** (1.940 fotógrafos,
+214 cidades, 2.400 fotógrafos, 910 mil fotos, 85% de repasse). Troque pelos
+reais em `app/page.tsx` e `components/auth-shell.tsx` antes de publicar.
+
+**Só o header e as telas de acesso estão traduzidos.** Ver a nota sobre idioma
+acima.
+
+---
+
 ## Variáveis de ambiente
 
 ```bash
@@ -151,6 +176,7 @@ conta no site. `docs/API.md` §7 explica quando vale a pena mudar.
 
 ```
 app/
+  not-found.tsx       404 no sistema visual, com saída para o acervo
   login/              esqueci-senha/      redefinir-senha/
   dashboard/          painel da conta: as licenças compradas
   pedido/[id]/        recibo de um pedido
@@ -161,12 +187,15 @@ app/
 components/
   auth-shell.tsx      moldura das telas de acesso
   site-header.tsx     header de duas faixas
+  site-footer.tsx     rodapé do site — só links que existem
+  archive-search.tsx  a busca do acervo: filtros, ordenação, estado na URL
   session-provider.tsx  a sessão do servidor no cliente (só identidade)
   film-frame.tsx      fotograma com perfuração
   buy-button.tsx      compra, estados e caminho para o arquivo
   form.tsx            campos, checkbox, alerta, botão, medidor de força
   locale-provider.tsx i18n no cliente
 lib/
+  mock-categories.ts  categorias derivadas do acervo (nunca filtro vazio)
   validation.ts       regras compartilhadas cliente/servidor
   rate-limit.ts       limites e bloqueio
   session.ts          leitura do cookie de sessão, num lugar só

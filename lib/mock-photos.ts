@@ -12,6 +12,9 @@ export interface Photo {
   thumbnailUrl: string;
   /** Arquivo em resolução de entrega — só sai por `/api/pedidos/<id>/arquivo`. */
   fullUrl: string;
+  /** Medida do arquivo entregue, em pixels. É o que a ficha da foto mostra. */
+  width: number;
+  height: number;
   category: string;
   orientation: 'horizontal' | 'vertical';
   isFavorited: boolean;
@@ -27,12 +30,16 @@ function thumbnailFor(id: string): string {
  * original no bucket privado, alcançado por URL assinada de vida curta — o
  * endereço nunca fica na página, senão a licença vira um link para copiar.
  */
+function dimensionsFor(orientation: Photo['orientation']): [number, number] {
+  return orientation === 'vertical' ? [2000, 3000] : [3000, 2000];
+}
+
 function fullFor(id: string, orientation: Photo['orientation']): string {
-  const [w, h] = orientation === 'vertical' ? [2000, 3000] : [3000, 2000];
+  const [w, h] = dimensionsFor(orientation);
   return `https://picsum.photos/seed/${id}/${w}/${h}`;
 }
 
-const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl'>[] = [
+const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = [
   {
     id: 'p-01',
     title: 'Véu ao vento na Praia da Pipa',
@@ -175,11 +182,16 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl'>[] = [
   },
 ];
 
-export const mockPhotos: Photo[] = CATALOG.map((photo) => ({
-  ...photo,
-  thumbnailUrl: thumbnailFor(photo.id),
-  fullUrl: fullFor(photo.id, photo.orientation),
-}));
+export const mockPhotos: Photo[] = CATALOG.map((photo) => {
+  const [width, height] = dimensionsFor(photo.orientation);
+  return {
+    ...photo,
+    thumbnailUrl: thumbnailFor(photo.id),
+    fullUrl: fullFor(photo.id, photo.orientation),
+    width,
+    height,
+  };
+});
 
 export function findPhoto(id: string): Photo | undefined {
   return mockPhotos.find((photo) => photo.id === id);

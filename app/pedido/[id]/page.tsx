@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { IconAlert, IconCheck, IconDownload } from '@/components/icons';
 import { findOrderById } from '@/lib/mock-db';
 import { findPhoto } from '@/lib/mock-photos';
@@ -13,6 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Recibo e licença — Revela',
+  robots: { index: false, follow: false }, // recibo é de quem comprou
 };
 
 /**
@@ -196,6 +198,7 @@ export default async function OrderPage({
           </section>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

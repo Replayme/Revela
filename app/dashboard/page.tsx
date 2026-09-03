@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { LogoutButton } from '@/components/logout-button';
 import { IconDownload, IconImage, IconLicense } from '@/components/icons';
 import { ordersByUser } from '@/lib/mock-db';
@@ -14,6 +15,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Minha conta — Revela',
+  robots: { index: false, follow: false }, // tela de conta
 };
 
 /**
@@ -162,6 +164,7 @@ export default async function DashboardPage() {
           </section>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

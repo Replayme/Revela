@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { IconStar } from '@/components/icons';
 import {
   findPhotographer,
@@ -134,6 +135,7 @@ export default async function PhotographerPage({
           </section>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

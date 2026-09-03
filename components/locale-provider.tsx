@@ -42,10 +42,16 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     } catch {
       /* localStorage indisponível (modo privado): segue com o padrão */
     }
-    const browser = navigator.language.slice(0, 2);
-    if ((LOCALES as readonly string[]).includes(browser)) {
-      setLocaleState(browser as Locale);
-    }
+    // A detecção pelo idioma do navegador saiu daqui de propósito.
+    //
+    // Só o header e as telas de acesso estão traduzidos; foto, perfil, acervo,
+    // painel, recibo e licença são texto fixo em português. Detectar "en"
+    // entregava, para qualquer visitante de navegador em inglês, um header em
+    // inglês sobre um site em português — sem que ninguém tivesse pedido.
+    //
+    // O alternador PT/EN continua funcionando e a escolha continua sendo
+    // lembrada. Quando o conteúdo estiver traduzido, a detecção volta: são
+    // estas quatro linhas de volta ao lugar.
   }, []);
 
   useEffect(() => {

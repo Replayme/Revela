@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLocale } from './locale-provider';
 import { useSession } from './session-provider';
 import { LanguageSwitcher } from './language-switcher';
@@ -8,12 +10,16 @@ import { Logo } from './logo';
 import { IconSearch } from './icons';
 import type { MessageKey } from '@/lib/i18n';
 
+/**
+ * Só entram rotas que existem. Quatro dos cinco itens apontavam para `/` —
+ * "Fotógrafos", "Coleções" e "Planos" não têm página, e "Vender fotos" tinha
+ * (o cadastro) mas levava para a home mesmo assim.
+ */
 const NAV: { key: MessageKey; href: string }[] = [
   { key: 'header.nav.explore', href: '/explorar' },
-  { key: 'header.nav.photographers', href: '/' },
-  { key: 'header.nav.collections', href: '/' },
-  { key: 'header.nav.pricing', href: '/' },
-  { key: 'header.nav.sell', href: '/' },
+  { key: 'header.nav.categories', href: '/#categorias' },
+  { key: 'header.nav.license', href: '/licenca' },
+  { key: 'header.nav.sell', href: '/cadastro-fotografo' },
 ];
 
 /**
@@ -30,6 +36,8 @@ const NAV: { key: MessageKey; href: string }[] = [
 export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) {
   const { t } = useLocale();
   const session = useSession();
+  const router = useRouter();
+  const [termo, setTermo] = useState('');
   const compact = variant === 'auth';
 
   return (
@@ -44,11 +52,21 @@ export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) 
           <Logo size={compact ? 'sm' : 'md'} />
         </div>
 
+        {/* A busca busca. Antes o `onSubmit` só chamava `preventDefault()`:
+            o campo mais visível do site não fazia nada em nenhuma página que
+            não fosse a home. `action` continua apontando para /explorar para
+            funcionar mesmo antes do JS hidratar. */}
         <form
           role="search"
-          action="/"
+          action="/explorar"
           className="flex min-w-0 flex-1 items-stretch"
-          onSubmit={(event) => event.preventDefault()}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const busca = termo.trim();
+            router.push(
+              busca ? `/explorar?termo=${encodeURIComponent(busca)}` : '/explorar',
+            );
+          }}
         >
           <label htmlFor="site-search" className="sr-only">
             {t('header.searchLabel')}
@@ -63,7 +81,10 @@ export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) 
             />
             <input
               id="site-search"
+              name="termo"
               type="search"
+              value={termo}
+              onChange={(event) => setTermo(event.target.value)}
               placeholder={t('header.search')}
               className={`w-full min-w-0 rounded-none border border-paper/20 bg-prussia-900/70 py-2.5 pr-3 pl-10 text-paper placeholder:text-paper-500 focus:border-amber focus:outline-none ${
                 compact

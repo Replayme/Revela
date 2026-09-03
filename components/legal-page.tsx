@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { IconAlert } from '@/components/icons';
 
 export interface LegalSection {
@@ -76,6 +77,7 @@ export function LegalPage({
           </p>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

@@ -9,10 +9,16 @@ import { currentSession, toPublicSession } from '@/lib/session';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Revela — marketplace de fotógrafos',
+  title: {
+    default: 'Revela — marketplace de fotógrafos',
+    template: '%s',
+  },
   description:
-    'Publique, licencie e venda suas fotografias. Acesso à sua conta Revela.',
-  robots: { index: false, follow: false }, // telas de conta não vão para busca
+    'Fotos de fotógrafos independentes, com uma licença só: uso ilimitado, para sempre, em qualquer meio.',
+  // O `noindex` já esteve aqui, quando o projeto era só a tela de login. Num
+  // marketplace ele esconde a home, o acervo, as fotos e os perfis — tudo que
+  // precisa ser achado. Hoje vale por página: cada tela de conta traz o seu
+  // (app/login/layout.tsx e as irmãs, /dashboard, /pedido).
 };
 
 export const viewport: Viewport = {
