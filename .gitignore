@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+
+# Gerados automaticamente pelo Next.js (generate-agent-files) a cada dev/build
+AGENTS.md
+CLAUDE.md

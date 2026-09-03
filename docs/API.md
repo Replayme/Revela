@@ -1,0 +1,332 @@
+# Revela — contrato da API de autenticação
+
+Este documento é o que o back-end precisa implementar para que a página de
+login funcione em produção. As rotas em `app/api/auth/*` deste projeto são um
+**mock** que já respeita este contrato (mesmos caminhos, mesmos payloads,
+mesmos códigos), então dá para trocar o mock pelo serviço real sem tocar em
+uma linha do front-end.
+
+Base: `https://<dominio>/api/auth`
+Content-Type de todas as requisições e respostas: `application/json`.
+
+---
+
+## 1. `POST /api/auth/login`
+
+Autentica e abre a sessão.
+
+**Request**
+
+```json
+{
+  "email": "ana@revela.com",
+  "password": "Revela@2026",
+  "remember": true
+}
+```
+
+| Campo      | Tipo    | Regra                                                     |
+| ---------- | ------- | --------------------------------------------------------- |
+| `email`    | string  | Obrigatório, formato de e-mail, no máximo 254 caracteres. |
+| `password` | string  | Obrigatório, mínimo 6 caracteres.                          |
+| `remember` | boolean | Opcional (padrão `false`). Define a duração da sessão.     |
+
+**200 — sucesso**
+
+```json
+{
+  "user": { "id": "usr_ana", "name": "Ana Ribeiro", "email": "ana@revela.com" },
+  "redirectTo": "/dashboard"
+}
+```
+
+Junto vai o cookie de sessão:
+
+```
+Set-Cookie: revela_session=<token>; HttpOnly; Secure; SameSite=Lax; Path=/;
+            Max-Age=2592000   ← só quando remember = true
+```
+
+Sem `remember`, o cookie é de sessão (sem `Max-Age`): morre quando o navegador
+fecha. Com `remember`, dura 30 dias.
+
+**Erros**
+
+| HTTP | `error`                | Quando                                    | Campos extras         |
+| ---- | ---------------------- | ----------------------------------------- | --------------------- |
+| 400  | `VALIDATION`           | Payload malformado ou fora das regras     | `fields`              |
+| 401  | `INVALID_PASSWORD`     | E-mail existe, senha errada               | `attemptsLeft`        |
+| 401  | `INVALID_CREDENTIALS`  | Modo sem enumeração (ver §7)              | `attemptsLeft`        |
+| 403  | `ACCOUNT_DISABLED`     | Conta suspensa ou banida                  | —                     |
+| 404  | `EMAIL_NOT_FOUND`      | Não existe conta com esse e-mail          | `attemptsLeft`        |
+| 429  | `RATE_LIMITED`         | Estourou 5 tentativas em 15 min           | `retryAfterSeconds`   |
+| 429  | `IP_BLOCKED`           | IP bloqueado por força bruta              | `retryAfterSeconds`   |
+| 5xx  | qualquer               | Falha do servidor                         | —                     |
+
+Respostas 429 devem trazer também o header `Retry-After` em segundos.
+
+O front-end traduz cada código em `lib/i18n.ts` (chaves `error.*`). Códigos
+desconhecidos caem em `error.UNKNOWN` — então o back-end pode adicionar novos
+sem quebrar a tela.
+
+---
+
+## 2. `POST /api/auth/register`
+
+Cria a conta do fotógrafo e já abre a sessão — obrigar a fazer login logo
+depois de criar a conta é pedir a mesma senha duas vezes seguidas.
+
+**Request**
+
+```json
+{
+  "name": "Ana Vilar",
+  "email": "ana@estudio.com",
+  "password": "umaSenhaBoa1",
+  "passwordConfirmation": "umaSenhaBoa1",
+  "acceptedTerms": true
+}
+```
+
+| Campo                  | Tipo    | Regra                                                        |
+| ---------------------- | ------- | ------------------------------------------------------------ |
+| `name`                 | string  | Obrigatório, 2 a 80 caracteres. É o crédito público da foto. |
+| `email`                | string  | Obrigatório, formato de e-mail, no máximo 254 caracteres.    |
+| `password`             | string  | Obrigatório, mínimo 6 caracteres.                             |
+| `passwordConfirmation` | string  | Obrigatório, idêntico a `password`.                           |
+| `acceptedTerms`        | boolean | Obrigatório, precisa ser `true`.                              |
+
+O e-mail é normalizado (minúsculas, sem espaços nas pontas) antes de virar
+chave. A unicidade tem que ser **índice único na coluna**, não uma consulta
+antes do insert: entre a consulta e a escrita cabe outra requisição.
+
+**201 — conta criada**
+
+```json
+{
+  "user": { "id": "usr_9f2c…", "name": "Ana Vilar", "email": "ana@estudio.com" },
+  "redirectTo": "/dashboard"
+}
+```
+
+Junto vai o mesmo cookie de sessão do login, sem `remember` (12 horas):
+
+```
+Set-Cookie: revela_session=<token>; HttpOnly; Secure; SameSite=Lax; Path=/;
+            Max-Age=43200
+```
+
+**202 — modo sem enumeração**
+
+Quando `REVEAL_ACCOUNT_EXISTENCE` é `false` e o e-mail já tem conta, a resposta
+é `{ "pending": true }` — a mesma que o endereço tivesse ou não conta. Quem já
+tem conta recebe um aviso por e-mail em vez de uma conta nova. Ver §7.
+
+**Erros**
+
+| HTTP | `error`        | Quando                                        | Campos extras       |
+| ---- | -------------- | --------------------------------------------- | ------------------- |
+| 400  | `VALIDATION`   | Payload malformado ou fora das regras         | `fields`            |
+| 409  | `EMAIL_TAKEN`  | E-mail já cadastrado (modo com enumeração)    | —                   |
+| 429  | `RATE_LIMITED` | Estourou 5 tentativas em 15 min               | `retryAfterSeconds` |
+| 429  | `IP_BLOCKED`   | IP bloqueado por força bruta                  | `retryAfterSeconds` |
+| 5xx  | qualquer       | Falha do servidor                             | —                   |
+
+`fields` traz uma chave por campo do request, com `"invalid"` ou `null` —
+inclusive `acceptedTerms`.
+
+O cadastro usa o **mesmo rate limit do login** (§8): criar conta escreve no
+banco e dispara e-mail, então sem teto vira o endpoint mais barato de abusar.
+
+**O que falta para produção**
+
+- Confirmação de e-mail antes de publicar qualquer foto — hoje a conta já nasce
+  ativa. O token de confirmação segue o mesmo desenho do de reset (§4): guardado
+  como hash, com prazo e uso único.
+- Registrar a versão dos termos aceita e a data do aceite, não só o booleano.
+
+---
+
+## 3. `POST /api/auth/forgot-password`
+
+```json
+{ "email": "ana@revela.com" }
+```
+
+**Responde 200 sempre**, exista a conta ou não:
+
+```json
+{ "ok": true }
+```
+
+Esta rota é a única em que não há escolha sobre enumeração: responder
+"e-mail não encontrado" aqui entrega uma lista de clientes para quem pedir.
+Quem tem conta descobre pelo e-mail que chega; quem não tem, não descobre nada.
+
+Fora de produção o mock devolve também `devResetUrl` para dar para testar o
+fluxo sem servidor de e-mail. **Nunca** devolva esse campo em produção.
+
+O e-mail enviado contém `https://<dominio>/redefinir-senha?token=<token>`.
+
+---
+
+## 4. `POST /api/auth/reset-password`
+
+```json
+{
+  "token": "<token do link>",
+  "password": "novaSenha@2026",
+  "confirmation": "novaSenha@2026"
+}
+```
+
+**200:** `{ "ok": true }`
+
+| HTTP | `error`         | Quando                                       |
+| ---- | --------------- | -------------------------------------------- |
+| 400  | `VALIDATION`    | Senha curta ou confirmação diferente         |
+| 400  | `TOKEN_INVALID` | Token inexistente, já usado ou adulterado    |
+| 400  | `TOKEN_EXPIRED` | Passou das 24 h                              |
+
+Ao trocar a senha, o back-end deve **invalidar todas as sessões ativas** do
+usuário e disparar um e-mail avisando da mudança — é assim que a pessoa
+descobre um acesso indevido.
+
+---
+
+## 5. `POST /api/auth/logout`
+
+Sem corpo. Responde 200 e devolve o cookie zerado (`Max-Age=0`). Se houver
+refresh token no servidor, revogue-o aqui — apagar o cookie do navegador não
+encerra nada do lado do servidor.
+
+---
+
+## 6. Armazenamento de senha
+
+Nunca em texto plano, nunca com SHA-256 "puro" (rápido demais, quebra em
+GPU). Use uma função de derivação com custo:
+
+| Algoritmo    | Parâmetros mínimos                          |
+| ------------ | ------------------------------------------- |
+| **argon2id** | m = 19 MiB, t = 2, p = 1 — preferido        |
+| bcrypt       | cost ≥ 12                                    |
+| scrypt       | N = 2^17, r = 8, p = 1                       |
+
+Regras que valem para qualquer um deles:
+
+- salt aleatório por usuário, guardado junto do hash;
+- comparação em tempo constante (`timingSafeEqual`), nunca `==`;
+- ao verificar um e-mail inexistente, **execute mesmo assim** um hash falso
+  antes de responder. Sem isso, o tempo de resposta denuncia quais e-mails
+  existem, mesmo com a mensagem genérica;
+- reidrate o hash (recalcule com parâmetros atuais) no próximo login bem
+  sucedido quando o custo armazenado estiver defasado.
+
+O `lib/mock-db.ts` deste projeto usa scrypt com salt por usuário e comparação
+em tempo constante — serve de referência, mas troque por argon2id em produção.
+
+---
+
+## 7. Enumeração de contas — uma decisão a tomar
+
+A tela pede mensagens distintas: **"E-mail não encontrado"** e
+**"Senha incorreta"**. Elas são melhores de usar — a pessoa sabe se errou o
+e-mail ou a senha. O custo é que qualquer um pode testar endereços e montar a
+lista de quem tem conta no Revela.
+
+O mock controla isso pela variável `REVEAL_ACCOUNT_EXISTENCE`:
+
+| Valor              | Comportamento                                                     |
+| ------------------ | ----------------------------------------------------------------- |
+| `true` (padrão)    | `EMAIL_NOT_FOUND` / `INVALID_PASSWORD` — mensagens distintas       |
+| `false`            | `INVALID_CREDENTIALS` nos dois casos — "E-mail ou senha incorretos" |
+
+Recomendação: distinto é aceitável enquanto o site vende para fotógrafos e a
+lista de contas não é sensível. Se um dia houver conta de comprador com dados
+de pagamento, mude para `false` — nesse ponto a lista de clientes vira
+informação que vale a pena proteger. A troca é uma variável de ambiente, o
+front-end já trata os dois códigos.
+
+---
+
+## 8. Rate limiting e força bruta
+
+Duas camadas, ambas implementadas em `lib/rate-limit.ts`:
+
+| Camada             | Chave            | Limite                | Punição                  |
+| ------------------ | ---------------- | --------------------- | ------------------------ |
+| Tentativa de login | IP + e-mail      | 5 falhas / 15 min     | 429 até a janela expirar |
+| Força bruta        | IP               | 15 falhas / 15 min    | Bloqueio de 30 min       |
+
+Detalhes que importam:
+
+- **conte antes de verificar a senha** e responda 429 sem tocar no hash;
+- login bem-sucedido zera o contador daquele par IP + e-mail;
+- pedidos de redefinição de senha têm limite próprio, senão viram spam;
+- **o estado não pode ficar na memória do processo.** Com duas instâncias,
+  cada uma teria sua contagem e o limite de 5 viraria 10. Use Redis/Upstash
+  (`INCR` + `EXPIRE`) ou o rate limiting do gateway (Cloudflare, nginx,
+  API Gateway). O mock usa um `Map` em memória só porque é mock;
+- o IP vem de `X-Forwarded-For` **apenas se o proxy for confiável e
+  sobrescrever o header** — se ele for repassado do cliente, qualquer um
+  escapa do limite trocando o valor;
+- considere CAPTCHA (hCaptcha/Turnstile) a partir da terceira falha, em vez
+  de bloquear direto: bloqueio por IP prejudica quem está atrás de NAT
+  corporativo.
+
+---
+
+## 9. Sessão
+
+O token vai em **cookie `HttpOnly`**, não em `localStorage`. Token em
+`localStorage` é legível por qualquer script da página — uma falha de XSS
+vira roubo de sessão. Com `HttpOnly`, o JavaScript não alcança o cookie.
+
+```
+HttpOnly    JavaScript não lê
+Secure      só trafega em HTTPS
+SameSite=Lax  corta CSRF na maioria dos casos
+Path=/
+```
+
+Formato: JWT curto (15 min) + refresh token opaco guardado no servidor, ou
+sessão opaca em Redis. JWT longo sem lista de revogação não dá para cancelar
+antes de expirar — é o que dói no dia em que alguém precisa derrubar todas as
+sessões de uma conta.
+
+Assine com `jose` ou `jsonwebtoken`, chave em variável de ambiente
+(`AUTH_SECRET`), com rotação prevista. O mock assina HMAC-SHA256 no mesmo
+formato compacto de JWT.
+
+Proteja as rotas privadas no `middleware.ts` além da checagem na página —
+assim a validação acontece antes de qualquer render.
+
+---
+
+## 10. HTTPS
+
+Obrigatório em produção, inclusive nos ambientes de homologação que recebem
+senha real.
+
+- redirecione 301 de HTTP para HTTPS na borda;
+- `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`
+  (já configurado em `next.config.mjs`);
+- cookies sempre com `Secure`;
+- sem HTTPS, a senha viaja legível em qualquer Wi-Fi no caminho.
+
+---
+
+## 11. Checklist antes de ir ao ar
+
+- [ ] Trocar `lib/mock-db.ts` por banco real com argon2id
+- [ ] Rate limiting em Redis ou no gateway, não em memória
+- [ ] `AUTH_SECRET` forte e fora do repositório
+- [ ] `Secure` nos cookies e HSTS ativo
+- [ ] E-mail transacional de redefinição configurado (com SPF/DKIM/DMARC)
+- [ ] `devResetUrl` nunca sai em produção
+- [ ] Log de tentativas de login (IP, user agent, resultado) sem gravar a senha
+- [ ] Alerta por e-mail em login de dispositivo novo e em troca de senha
+- [ ] Decidir §7 (enumeração) e registrar a decisão
+- [ ] `middleware.ts` protegendo `/dashboard` e demais rotas privadas
+- [ ] Testar com teclado e leitor de tela: foco visível, erros anunciados
