@@ -33,6 +33,7 @@ Contas de demonstração:
 | `/foto/{id}`        | Página da foto, com a compra.                                |
 | `/api/auth/*`       | **Mock** das rotas — implementa `docs/API.md` para os testes.|
 | `/api/pedidos/*`    | **Mock** da compra e da entrega do arquivo (`docs/API.md` §11).|
+| `/api/favoritos`    | Fotos salvas por quem está logado.                           |
 
 O back-end real está especificado em [`docs/API.md`](docs/API.md): endpoints,
 payloads, códigos de erro, hash de senha, sessão, rate limiting, HTTPS e a
@@ -150,9 +151,12 @@ de duas linhas). Os dois já sabem quem está logado e apontam para as mesmas
 rotas, mas são dois componentes. Unificar é uma decisão de desenho — a home
 clara funciona como abertura, e escurecê-la muda o tom da primeira tela.
 
-**Os números da home e do painel lateral são placeholders** (1.940 fotógrafos,
-214 cidades, 2.400 fotógrafos, 910 mil fotos, 85% de repasse). Troque pelos
-reais em `app/page.tsx` e `components/auth-shell.tsx` antes de publicar.
+**Nenhum número de vaidade na tela.** Os painéis da home e das telas de acesso
+traziam seis números inventados — e dois deles se contradiziam ("0% de
+comissão" contra "85% de repasse"). Foram trocados por afirmações que o código
+sustenta: a licença única, a perpetuidade dela e a política de comissão. Se um
+dia houver número medido, ele volta para `app/page.tsx` e
+`components/auth-shell.tsx`.
 
 **Só o header e as telas de acesso estão traduzidos.** Ver a nota sobre idioma
 acima.
@@ -177,6 +181,8 @@ conta no site. `docs/API.md` §7 explica quando vale a pena mudar.
 ```
 app/
   not-found.tsx       404 no sistema visual, com saída para o acervo
+  error.tsx           boundary de erro — nunca mostra a mensagem crua
+  icon.svg            favicon              sitemap.ts / robots.ts
   login/              esqueci-senha/      redefinir-senha/
   dashboard/          painel da conta: as licenças compradas
   pedido/[id]/        recibo de um pedido
@@ -194,7 +200,10 @@ components/
   buy-button.tsx      compra, estados e caminho para o arquivo
   form.tsx            campos, checkbox, alerta, botão, medidor de força
   locale-provider.tsx i18n no cliente
+middleware.ts         barreira das rotas privadas, antes do render
 lib/
+  site.ts             o endereço público, num lugar só (OG, sitemap, robots)
+  session-cookie.ts   o nome do cookie — sem dependência, para o edge
   mock-categories.ts  categorias derivadas do acervo (nunca filtro vazio)
   validation.ts       regras compartilhadas cliente/servidor
   rate-limit.ts       limites e bloqueio

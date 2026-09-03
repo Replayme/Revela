@@ -385,6 +385,44 @@ Três decisões que valem para a versão real:
   privado, com `Content-Disposition: attachment` e `Cache-Control: no-store`.
   A rota confere a posse a cada pedido e só então assina.
 
+### `GET /api/fotos` — ainda não existe, e nasce paginado
+
+A busca do acervo (`/explorar`) filtra e ordena **em memória**, sobre o array
+de `lib/mock-photos.ts`. Com catorze fotos isso é honesto; com acervo real é
+insustentável de duas maneiras — o cliente baixaria o catálogo inteiro para
+mostrar vinte fotos, e a ordenação por preço mentiria, porque ordenaria só o
+pedaço que veio.
+
+Quando esta rota existir, ela nasce paginada. O front já está no formato: o
+estado da busca mora na query string (`?termo=`, `?categoria=`, `?orientacao=`,
+`?ordenar=`, `?precoMax=`), e `?pagina=` entra na mesma chave sem mexer no
+resto.
+
+```
+GET /api/fotos?termo=praia&categoria=retrato&ordenar=preco-asc&pagina=2
+```
+
+```json
+{
+  "photos": [ /* … */ ],
+  "page": 2,
+  "perPage": 24,
+  "total": 318
+}
+```
+
+Duas coisas que precisam vir do servidor junto com a página:
+
+- **a contagem total**, senão a tela não sabe dizer "318 fotos encontradas" —
+  hoje ela conta o array que tem na mão;
+- **a contagem por categoria**, que hoje sai de `lib/mock-categories.ts`
+  (derivada do acervo em memória) e alimenta os números ao lado de cada filtro.
+  No banco isso é um `GROUP BY`, e precisa respeitar os *outros* filtros ativos
+  para não oferecer uma categoria que, combinada com o resto, não devolve nada.
+
+Prefira cursor a `offset` para a paginação: em acervo que recebe foto nova o
+tempo todo, `offset` repete e pula itens entre uma página e a seguinte.
+
 ### `GET /api/pedidos` — ainda não existe
 
 O painel (`/dashboard`) lê os pedidos direto do "banco" porque é um componente

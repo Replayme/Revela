@@ -25,9 +25,27 @@ export async function generateMetadata({
 }) {
   const photo = findPhoto((await params).id);
   if (!photo) return { title: 'Foto não encontrada' };
+  const description = `${photo.category} por ${photo.photographer.name}. ${UNIVERSAL_LICENSE.summary}`;
+
   return {
     title: `${photo.title} — ${photo.photographer.name}`,
-    description: `${photo.category} por ${photo.photographer.name}. ${UNIVERSAL_LICENSE.summary}`,
+    description,
+    // A foto é o produto: sem `og:image` o link colado no WhatsApp ou no Slack
+    // vira uma linha de texto, e ninguém clica numa linha de texto para ver
+    // uma foto.
+    openGraph: {
+      title: photo.title,
+      description,
+      type: 'article',
+      images: [
+        {
+          url: photo.thumbnailUrl,
+          width: 800,
+          height: 600,
+          alt: `${photo.title}, por ${photo.photographer.name}`,
+        },
+      ],
+    },
   };
 }
 
@@ -51,7 +69,7 @@ export default async function PhotoPage({
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="flex-1">
+      <main id="conteudo" className="flex-1">
         <div className="mx-auto w-full max-w-[1180px] px-5 py-10 sm:px-8 sm:py-14">
           <nav aria-label="Trilha" className="text-xs text-paper-500">
             <Link href="/explorar" className="hover:text-paper">

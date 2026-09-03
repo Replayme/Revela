@@ -42,6 +42,16 @@ export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) 
 
   return (
     <header className="relative z-20 border-b border-paper/12 bg-prussia-950/85 backdrop-blur-sm">
+      {/* Primeira parada da tabulação em toda página que usa este header. Fica
+          escondido até receber foco: quem navega com mouse nunca o vê, e quem
+          navega com teclado não precisa atravessar a busca e a navegação
+          inteiras para chegar ao conteúdo. */}
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-amber focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-prussia-950"
+      >
+        Pular para o conteúdo
+      </a>
       {/* faixa 1 — busca */}
       <div
         className={`mx-auto flex w-full max-w-[1400px] items-center gap-4 px-4 sm:px-6 lg:px-10 ${

@@ -17,7 +17,6 @@ export interface Photo {
   height: number;
   category: string;
   orientation: 'horizontal' | 'vertical';
-  isFavorited: boolean;
 }
 
 /** Imagem determinística por id — o mesmo id devolve sempre a mesma foto. */
@@ -48,7 +47,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.9,
     category: 'Casamento',
     orientation: 'horizontal',
-    isFavorited: false,
   },
   {
     id: 'p-02',
@@ -58,7 +56,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.7,
     category: 'Documental e rua',
     orientation: 'horizontal',
-    isFavorited: true,
   },
   {
     id: 'p-03',
@@ -68,7 +65,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 5,
     category: 'Retrato',
     orientation: 'vertical',
-    isFavorited: false,
   },
   {
     id: 'p-04',
@@ -78,7 +74,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.6,
     category: 'Documental e rua',
     orientation: 'horizontal',
-    isFavorited: false,
   },
   {
     id: 'p-05',
@@ -88,7 +83,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.8,
     category: 'Gastronomia',
     orientation: 'horizontal',
-    isFavorited: false,
   },
   {
     id: 'p-06',
@@ -98,7 +92,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.5,
     category: 'Arquitetura e imóveis',
     orientation: 'vertical',
-    isFavorited: false,
   },
   {
     id: 'p-07',
@@ -108,7 +101,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.9,
     category: 'Família e infantil',
     orientation: 'horizontal',
-    isFavorited: true,
   },
   {
     id: 'p-08',
@@ -118,7 +110,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.4,
     category: 'Produto e e-commerce',
     orientation: 'horizontal',
-    isFavorited: false,
   },
   {
     id: 'p-09',
@@ -128,7 +119,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.8,
     category: 'Família e infantil',
     orientation: 'horizontal',
-    isFavorited: false,
   },
   {
     id: 'p-10',
@@ -138,7 +128,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.3,
     category: 'Eventos corporativos',
     orientation: 'horizontal',
-    isFavorited: false,
   },
   {
     id: 'p-11',
@@ -148,7 +137,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.7,
     category: 'Casamento',
     orientation: 'vertical',
-    isFavorited: false,
   },
   {
     id: 'p-12',
@@ -158,7 +146,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.6,
     category: 'Gastronomia',
     orientation: 'horizontal',
-    isFavorited: false,
   },
   {
     id: 'p-13',
@@ -168,7 +155,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.9,
     category: 'Arquitetura e imóveis',
     orientation: 'vertical',
-    isFavorited: false,
   },
   {
     id: 'p-14',
@@ -178,7 +164,6 @@ const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl' | 'width' | 'height'>[] = 
     rating: 4.8,
     category: 'Retrato',
     orientation: 'horizontal',
-    isFavorited: false,
   },
 ];
 

@@ -14,7 +14,7 @@ import { formatDate, formatPrice } from '@/lib/format';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Minha conta — Revela',
+  title: 'Minha conta',
   robots: { index: false, follow: false }, // tela de conta
 };
 
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="tex-contact-sheet flex-1">
+      <main id="conteudo" className="tex-contact-sheet flex-1">
         <div className="mx-auto w-full max-w-[1180px] px-5 py-12 sm:px-8 sm:py-16">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>

@@ -24,6 +24,7 @@ export function PhotoGrid({
   loading = false,
   skeletonCount = 8,
   onToggleFavorite,
+  favorites,
   tone = 'paper',
   layout = 'wide',
 }: {
@@ -31,6 +32,8 @@ export function PhotoGrid({
   loading?: boolean;
   skeletonCount?: number;
   onToggleFavorite?: (id: string) => void;
+  /** Ids favoritados por quem está logado — vem do `useFavorites`. */
+  favorites?: ReadonlySet<string>;
   layout?: keyof typeof GRIDS;
   /**
    * Fundo em que a grade está. Só muda o estado vazio: o card é um fotograma
@@ -68,6 +71,7 @@ export function PhotoGrid({
           <PhotoCard
             photo={photo}
             frameNumber={frameNumber(index)}
+            isFavorited={favorites?.has(photo.id) ?? false}
             onToggleFavorite={onToggleFavorite}
           />
         </li>

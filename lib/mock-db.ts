@@ -59,6 +59,8 @@ interface MockStore {
   users: User[];
   orders: Order[];
   resetTokens: Map<string, ResetRecord>;
+  /** Favoritos por usuário: id do usuário → ids das fotos. */
+  favorites: Map<string, Set<string>>;
 }
 
 const globalStore = globalThis as typeof globalThis & {
@@ -92,6 +94,7 @@ const store: MockStore = (globalStore.__revelaMockStore ??= {
   users: seedUsers,
   orders: [],
   resetTokens: new Map(),
+  favorites: new Map(),
 });
 
 export function findUserByEmail(email: string): User | undefined {
@@ -229,6 +232,36 @@ export function ordersByUser(userId: string): Order[] {
  */
 export function findOrderById(userId: string, orderId: string): Order | undefined {
   return store.orders.find((o) => o.id === orderId && o.userId === userId);
+}
+
+/* ------------------------------- favoritos ------------------------------- */
+
+/**
+ * Favoritar é de quem favorita.
+ *
+ * Antes `isFavorited` era campo da foto, no catálogo: o mesmo coração para
+ * todo visitante, igual para quem nunca entrou, e perdido no reload. Salvar
+ * uma foto só quer dizer alguma coisa se for a *sua* lista — daí a chave ser
+ * o usuário.
+ */
+export function favoritesByUser(userId: string): string[] {
+  return [...(store.favorites.get(userId) ?? [])];
+}
+
+export function isFavorited(userId: string, photoId: string): boolean {
+  return store.favorites.get(userId)?.has(photoId) ?? false;
+}
+
+/** Alterna e devolve o estado que ficou, que é o que a tela precisa saber. */
+export function toggleFavorite(userId: string, photoId: string): boolean {
+  const atuais = store.favorites.get(userId) ?? new Set<string>();
+  const favoritada = !atuais.has(photoId);
+
+  if (favoritada) atuais.add(photoId);
+  else atuais.delete(photoId);
+
+  store.favorites.set(userId, atuais);
+  return favoritada;
 }
 
 /* -------------------------------- sessão --------------------------------- */

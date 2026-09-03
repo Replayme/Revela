@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PhotoGrid } from './photo-grid';
+import { useFavorites } from './use-favorites';
 import { IconSearch } from './icons';
 import { mockPhotos, type Photo } from '@/lib/mock-photos';
 import { mockCategories, slugify } from '@/lib/mock-categories';
@@ -65,6 +66,7 @@ function combina(photo: Photo, termo: string): boolean {
 export function ArchiveSearch() {
   const router = useRouter();
   const params = useSearchParams();
+  const { favorites, toggle: alternarFavorita } = useFavorites();
 
   const termo = params.get('termo') ?? '';
   const categoria = params.get('categoria') ?? '';
@@ -208,7 +210,13 @@ export function ArchiveSearch() {
           </div>
 
           <div className="mt-7">
-            <PhotoGrid photos={resultados} tone="dark" layout="compact" />
+            <PhotoGrid
+              photos={resultados}
+              favorites={favorites}
+              onToggleFavorite={alternarFavorita}
+              tone="dark"
+              layout="compact"
+            />
           </div>
         </div>
       </div>
@@ -234,10 +242,7 @@ function Filtros({
   return (
     // No celular os filtros ficam recolhidos: numa tela estreita eles
     // empurrariam as fotos para baixo da dobra, e é a foto que a pessoa veio ver.
-    <details
-      open
-      className="group border border-paper/12 lg:border-0 [&>summary]:lg:hidden [&:not([open])>div]:lg:block"
-    >
+    <details className="group border border-paper/12 lg:border-0 [&>summary]:lg:hidden [&:not([open])>div]:lg:block">
       <summary className="cursor-pointer list-none px-4 py-3 text-[11px] font-semibold tracking-[0.16em] text-paper uppercase marker:content-none">
         Filtros
         <span aria-hidden className="float-right text-paper-500 group-open:hidden">

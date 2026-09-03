@@ -4,7 +4,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { IconImage } from '@/components/icons';
 
 export const metadata = {
-  title: 'Página não encontrada — Revela',
+  title: 'Página não encontrada',
   robots: { index: false, follow: true },
 };
 
@@ -21,7 +21,7 @@ export default function NotFound() {
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="tex-contact-sheet flex flex-1 items-center">
+      <main id="conteudo" className="tex-contact-sheet flex flex-1 items-center">
         <div className="mx-auto w-full max-w-[640px] px-5 py-20 text-center sm:px-8">
           <IconImage width={30} height={30} className="mx-auto text-paper-500" />
           <p className="mt-5 font-mono text-[10px] tracking-[0.24em] text-amber uppercase">

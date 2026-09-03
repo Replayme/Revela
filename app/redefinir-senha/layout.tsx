@@ -6,7 +6,7 @@
  * layout raiz e escondia o site inteiro — agora vale só onde deve valer.
  */
 export const metadata = {
-  title: 'Definir nova senha — Revela',
+  title: 'Definir nova senha',
   robots: { index: false, follow: false },
 };
 

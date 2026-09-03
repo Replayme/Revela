@@ -13,7 +13,7 @@ import { formatDateLong, formatPrice } from '@/lib/format';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Recibo e licença — Revela',
+  title: 'Recibo e licença',
   robots: { index: false, follow: false }, // recibo é de quem comprou
 };
 
@@ -51,7 +51,7 @@ export default async function OrderPage({
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="flex-1">
+      <main id="conteudo" className="flex-1">
         <div className="mx-auto w-full max-w-[860px] px-5 py-10 sm:px-8 sm:py-14">
           <nav aria-label="Trilha" className="text-xs text-paper-500">
             <Link href="/dashboard" className="hover:text-paper">

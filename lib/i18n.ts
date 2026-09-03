@@ -39,9 +39,9 @@ const pt = {
   'aside.headline': 'Cada foto sua tem um preço. Aqui ele é seu.',
   'aside.body':
     'Publique ensaios, defina a licença e receba direto — sem intermediário decidindo quanto vale o seu trabalho.',
-  'aside.stat1': 'fotógrafos ativos',
-  'aside.stat2': 'fotos no acervo',
-  'aside.stat3': 'de repasse ao autor',
+  'aside.stat1': 'licença, para todo uso',
+  'aside.stat2': 'sem prazo de validade',
+  'aside.stat3': 'de comissão sobre o cachê',
 
   'login.eyebrow': 'Acesso à conta',
   'login.title': 'Entrar no Revela',
@@ -175,9 +175,9 @@ const en: Record<MessageKey, string> = {
   'aside.headline': 'Every photo of yours has a price. Here it is yours.',
   'aside.body':
     'Publish shoots, set the licence and get paid directly — with no middleman deciding what your work is worth.',
-  'aside.stat1': 'active photographers',
-  'aside.stat2': 'photos in the archive',
-  'aside.stat3': 'paid to the author',
+  'aside.stat1': 'licence, for every use',
+  'aside.stat2': 'no expiry date',
+  'aside.stat3': 'commission on the fee',
 
   'login.eyebrow': 'Account access',
   'login.title': 'Sign in to Revela',

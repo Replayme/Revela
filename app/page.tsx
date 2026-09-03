@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from '@/components/session-provider';
+import { useFavorites } from '@/components/use-favorites';
 import { SiteFooter } from '@/components/site-footer';
 import { PhotoGrid } from '@/components/photo-grid';
 import { CategoryGrid } from '@/components/category-grid';
@@ -30,6 +31,9 @@ const PERFIS = [
 export default function HomePage() {
   const router = useRouter();
   const sessao = useSession();
+  // O favorito é do usuário, não da cópia local do catálogo: alternar aqui
+  // pintava o coração e perdia tudo no reload.
+  const { favorites, toggle: alternarFavorita } = useFavorites();
   const [menuAberto, setMenuAberto] = useState(false);
   const [busca, setBusca] = useState('');
 
@@ -41,14 +45,6 @@ export default function HomePage() {
     const id = setTimeout(() => setFotos(mockPhotos), 800);
     return () => clearTimeout(id);
   }, []);
-
-  function alternarFavorita(fotoId: string) {
-    setFotos((atual) =>
-      atual?.map((foto) =>
-        foto.id === fotoId ? { ...foto, isFavorited: !foto.isFavorited } : foto,
-      ) ?? atual,
-    );
-  }
 
   function buscar(event: React.FormEvent) {
     event.preventDefault();
@@ -238,6 +234,7 @@ export default function HomePage() {
             <PhotoGrid
               photos={fotos ?? []}
               loading={fotos === null}
+              favorites={favorites}
               onToggleFavorite={alternarFavorita}
             />
           </div>
@@ -299,14 +296,20 @@ export default function HomePage() {
               </p>
               <p>Não cobramos comissão sobre o trabalho entregue.</p>
             </div>
+            {/* Aqui havia "1.940 fotógrafos" e "214 cidades" — números que
+                ninguém mediu, num site que ainda roda com catorze fotos de
+                demonstração. Trocados por afirmações que o próprio código
+                sustenta: a licença única de `lib/license.ts` e a política de
+                comissão do parágrafo ao lado. Quando houver número real
+                medido, ele volta. */}
             <div className={styles.numeros}>
               <div>
-                <b>1.940</b>
-                <span>fotógrafos com portfólio publicado</span>
+                <b>Uma</b>
+                <span>licença para todo uso, sem faixa por finalidade</span>
               </div>
               <div>
-                <b>214</b>
-                <span>cidades atendidas</span>
+                <b>Sempre</b>
+                <span>a licença comprada não expira</span>
               </div>
               <div>
                 <b>0%</b>

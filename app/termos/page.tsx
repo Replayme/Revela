@@ -2,7 +2,7 @@ import { LegalLink, LegalPage } from '@/components/legal-page';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 
 export const metadata = {
-  title: 'Termos de uso — Revela',
+  title: 'Termos de uso',
   description:
     'As regras da conta, da compra e da publicação de fotos no Revela.',
 };

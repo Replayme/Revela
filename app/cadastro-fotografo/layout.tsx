@@ -6,7 +6,7 @@
  * layout raiz e escondia o site inteiro — agora vale só onde deve valer.
  */
 export const metadata = {
-  title: 'Criar conta de fotógrafo — Revela',
+  title: 'Criar conta de fotógrafo',
   robots: { index: false, follow: false },
 };
 

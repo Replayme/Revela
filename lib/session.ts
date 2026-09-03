@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers';
 import { verifySessionToken, type SessionPayload } from './mock-db';
+import { SESSION_COOKIE } from './session-cookie';
 
-export const SESSION_COOKIE = 'revela_session';
+export { SESSION_COOKIE };
 
 /**
  * Sessão de quem está pedindo a página, ou `null`.
