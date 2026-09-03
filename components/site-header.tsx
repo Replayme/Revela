@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useLocale } from './locale-provider';
+import { useSession } from './session-provider';
 import { LanguageSwitcher } from './language-switcher';
 import { Logo } from './logo';
 import { IconSearch } from './icons';
@@ -28,6 +29,7 @@ const NAV: { key: MessageKey; href: string }[] = [
  */
 export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) {
   const { t } = useLocale();
+  const session = useSession();
   const compact = variant === 'auth';
 
   return (
@@ -101,18 +103,36 @@ export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) 
 
           <div className="flex shrink-0 items-center gap-4 py-2">
             <LanguageSwitcher />
-            <Link
-              href="/login"
-              className="hidden text-[11px] font-medium tracking-[0.16em] text-paper-300 uppercase transition-colors hover:text-amber sm:block"
-            >
-              {t('header.signin')}
-            </Link>
-            <Link
-              href="/login"
-              className="border border-amber/60 px-3 py-1.5 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:bg-amber hover:text-prussia-950"
-            >
-              {t('header.signup')}
-            </Link>
+            {session ? (
+              <>
+                {/* O nome some no celular; o que não pode sumir é o caminho
+                    para as licenças — é o que a pessoa comprou. */}
+                <span className="hidden max-w-[16ch] truncate text-[11px] font-medium tracking-[0.16em] text-paper-500 uppercase md:block">
+                  {session.name}
+                </span>
+                <Link
+                  href="/dashboard"
+                  className="border border-amber/60 px-3 py-1.5 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:bg-amber hover:text-prussia-950"
+                >
+                  {t('header.account')}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden text-[11px] font-medium tracking-[0.16em] text-paper-300 uppercase transition-colors hover:text-amber sm:block"
+                >
+                  {t('header.signin')}
+                </Link>
+                <Link
+                  href="/cadastro-fotografo"
+                  className="border border-amber/60 px-3 py-1.5 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:bg-amber hover:text-prussia-950"
+                >
+                  {t('header.signup')}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

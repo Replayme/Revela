@@ -32,6 +32,7 @@ const pt = {
   'header.nav.pricing': 'Planos',
   'header.nav.sell': 'Vender fotos',
   'header.signin': 'Entrar',
+  'header.account': 'Minha conta',
   'header.signup': 'Criar conta',
   'header.language': 'Idioma',
 
@@ -146,9 +147,6 @@ const pt = {
   'reset.goLogin': 'Ir para o login',
   'reset.missingToken': 'Link sem token. Solicite uma nova redefinição.',
 
-  'dashboard.title': 'Painel do fotógrafo',
-  'dashboard.body':
-    'Você chegou aqui pelo redirecionamento automático após o login.',
   'dashboard.logout': 'Sair',
 
   'a11y.loading': 'Carregando',
@@ -171,6 +169,7 @@ const en: Record<MessageKey, string> = {
   'header.nav.pricing': 'Pricing',
   'header.nav.sell': 'Sell photos',
   'header.signin': 'Sign in',
+  'header.account': 'My account',
   'header.signup': 'Create account',
   'header.language': 'Language',
 
@@ -282,8 +281,6 @@ const en: Record<MessageKey, string> = {
   'reset.goLogin': 'Go to sign in',
   'reset.missingToken': 'Link has no token. Request a new reset.',
 
-  'dashboard.title': 'Photographer dashboard',
-  'dashboard.body': 'You landed here through the automatic redirect after sign in.',
   'dashboard.logout': 'Sign out',
 
   'a11y.loading': 'Loading',

@@ -26,13 +26,24 @@ Contas de demonstração:
 | `/cadastro-fotografo` | Criação de conta; já abre a sessão e leva ao painel.       |
 | `/esqueci-senha`    | Pedido de redefinição.                                       |
 | `/redefinir-senha`  | Nova senha via token (24 h, uso único).                      |
-| `/dashboard`        | Destino do redirecionamento; exemplo de rota protegida.      |
+| `/dashboard`        | Painel da conta: as licenças compradas. Rota protegida.      |
+| `/pedido/{id}`      | Recibo de um pedido: dados da compra, licença aceita, arquivo.|
 | `/`                 | Home: destaques, categorias, fotógrafos e seção de valor.    |
 | `/explorar`         | Busca do acervo com filtros.                                 |
+| `/foto/{id}`        | Página da foto, com a compra.                                |
 | `/api/auth/*`       | **Mock** das rotas — implementa `docs/API.md` para os testes.|
+| `/api/pedidos/*`    | **Mock** da compra e da entrega do arquivo (`docs/API.md` §11).|
 
 O back-end real está especificado em [`docs/API.md`](docs/API.md): endpoints,
-payloads, códigos de erro, hash de senha, sessão, rate limiting e HTTPS.
+payloads, códigos de erro, hash de senha, sessão, rate limiting, HTTPS e a
+entrega do arquivo comprado.
+
+**O que a compra faz e o que não faz.** Comprar emite a licença, registra o
+pedido com o preço pago e a versão do texto aceito, e libera o download em
+`/api/pedidos/{id}/arquivo` — que confere a posse a cada pedido, em vez de
+deixar a URL do original na página. **Não há cobrança no meio**: o passo de
+pagamento é o que falta, e `docs/API.md` §11 diz onde ele entra (pedido
+`pending` → webhook do provedor → `paid` → download liberado).
 
 ---
 
@@ -52,12 +63,20 @@ Cianotipia e papel de laboratório.
 - Blocos são fotogramas com perfuração lateral (`components/film-frame.tsx`),
   cantos vivos. Nenhum card arredondado.
 
-Duas decisões que valem explicação:
+Três decisões que valem explicação:
 
 **A busca aparece contida nas telas de acesso** (`<SiteHeader variant="auth">`).
 A busca é o elemento mais pesado do site, mas numa página cujo trabalho é
 autenticar, o formulário precisa ganhar dela — senão a página não sabe o que
 está pedindo. A estrutura de duas faixas continua idêntica.
+
+**O header sabe quem está logado, e por isso o site é todo dinâmico.** A
+sessão é lida no `app/layout.tsx` e desce por contexto (`session-provider.tsx`)
+até o header — inclusive nas páginas de cliente, como a home, que não têm como
+ler o cookie. Ler cookie no layout desliga a geração estática do site inteiro:
+é uma troca consciente enquanto o acervo é um array em memória. Quando ele
+virar banco, o header sai do layout para um componente próprio em `Suspense` e
+as páginas públicas voltam a ser estáticas.
 
 **Os números do painel lateral são placeholders** (2.400 fotógrafos, 910 mil
 fotos, 85% de repasse). Troque pelos reais em `components/auth-shell.tsx`
@@ -133,18 +152,26 @@ conta no site. `docs/API.md` §7 explica quando vale a pena mudar.
 ```
 app/
   login/              esqueci-senha/      redefinir-senha/
-  dashboard/          api/auth/{login,forgot-password,reset-password,logout}/
+  dashboard/          painel da conta: as licenças compradas
+  pedido/[id]/        recibo de um pedido
+  foto/[id]/          página da foto, com a compra
+  api/auth/{login,register,forgot-password,reset-password,logout}/
+  api/pedidos/        compra e entrega do arquivo
   globals.css         tokens, texturas e animações
 components/
   auth-shell.tsx      moldura das telas de acesso
   site-header.tsx     header de duas faixas
+  session-provider.tsx  a sessão do servidor no cliente (só identidade)
   film-frame.tsx      fotograma com perfuração
+  buy-button.tsx      compra, estados e caminho para o arquivo
   form.tsx            campos, checkbox, alerta, botão, medidor de força
   locale-provider.tsx i18n no cliente
 lib/
   validation.ts       regras compartilhadas cliente/servidor
   rate-limit.ts       limites e bloqueio
-  mock-db.ts          usuários, hashes, tokens, sessão
+  session.ts          leitura do cookie de sessão, num lugar só
+  license.ts          o texto da licença e o histórico de versões
+  mock-db.ts          usuários, hashes, tokens, sessão, pedidos
   i18n.ts             pt / en
 docs/API.md           contrato do back-end
 ```

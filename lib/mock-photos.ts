@@ -10,6 +10,8 @@ export interface Photo {
   price: number;
   rating: number;
   thumbnailUrl: string;
+  /** Arquivo em resolução de entrega — só sai por `/api/pedidos/<id>/arquivo`. */
+  fullUrl: string;
   category: string;
   orientation: 'horizontal' | 'vertical';
   isFavorited: boolean;
@@ -20,7 +22,17 @@ function thumbnailFor(id: string): string {
   return `https://picsum.photos/seed/${id}/800/600`;
 }
 
-const CATALOG: Omit<Photo, 'thumbnailUrl'>[] = [
+/**
+ * O arquivo grande. No mock é a mesma imagem em outra medida; em produção é o
+ * original no bucket privado, alcançado por URL assinada de vida curta — o
+ * endereço nunca fica na página, senão a licença vira um link para copiar.
+ */
+function fullFor(id: string, orientation: Photo['orientation']): string {
+  const [w, h] = orientation === 'vertical' ? [2000, 3000] : [3000, 2000];
+  return `https://picsum.photos/seed/${id}/${w}/${h}`;
+}
+
+const CATALOG: Omit<Photo, 'thumbnailUrl' | 'fullUrl'>[] = [
   {
     id: 'p-01',
     title: 'Véu ao vento na Praia da Pipa',
@@ -166,6 +178,7 @@ const CATALOG: Omit<Photo, 'thumbnailUrl'>[] = [
 export const mockPhotos: Photo[] = CATALOG.map((photo) => ({
   ...photo,
   thumbnailUrl: thumbnailFor(photo.id),
+  fullUrl: fullFor(photo.id, photo.orientation),
 }));
 
 export function findPhoto(id: string): Photo | undefined {

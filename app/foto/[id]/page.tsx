@@ -1,14 +1,14 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { BuyButton } from '@/components/buy-button';
 import { IconCheck, IconStar } from '@/components/icons';
-import { findOrder, verifySessionToken } from '@/lib/mock-db';
+import { findOrder } from '@/lib/mock-db';
 import { findPhoto, mockPhotos, photosByPhotographer } from '@/lib/mock-photos';
 import { findPhotographer } from '@/lib/mock-photographers';
 import { UNIVERSAL_LICENSE, licenseLabel } from '@/lib/license';
+import { currentSession } from '@/lib/session';
 import { formatPrice, formatRating } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -38,9 +38,8 @@ export default async function PhotoPage({
   const photo = findPhoto((await params).id);
   if (!photo) notFound();
 
-  const token = (await cookies()).get('revela_session')?.value;
-  const session = token ? verifySessionToken(token) : null;
-  const alreadyOwned = session ? Boolean(findOrder(session.sub, photo.id)) : false;
+  const session = await currentSession();
+  const pedido = session ? findOrder(session.sub, photo.id) : undefined;
 
   const photographer = findPhotographer(photo.photographer.id);
   const outras = photosByPhotographer(photo.photographer.id).filter(
@@ -133,7 +132,7 @@ export default async function PhotoPage({
                     photoId={photo.id}
                     price={photo.price}
                     isSignedIn={Boolean(session)}
-                    alreadyOwned={alreadyOwned}
+                    orderId={pedido?.id ?? null}
                   />
                 </div>
               </div>

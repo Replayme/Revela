@@ -211,8 +211,24 @@ export function findOrder(userId: string, photoId: string): Order | undefined {
   return store.orders.find((o) => o.userId === userId && o.photoId === photoId);
 }
 
+/**
+ * Pedidos de um usuário, do mais recente para o mais antigo — é a ordem em
+ * que o painel lista as licenças.
+ */
 export function ordersByUser(userId: string): Order[] {
-  return store.orders.filter((o) => o.userId === userId);
+  return store.orders
+    .filter((o) => o.userId === userId)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/**
+ * Um pedido pelo id, **já filtrado pelo dono**. A busca recebe o usuário de
+ * propósito: um `findById` puro deixaria a checagem de dono a cargo de quem
+ * chama, e é assim que um dia alguém lê o recibo de outra pessoa trocando o
+ * id na URL.
+ */
+export function findOrderById(userId: string, orderId: string): Order | undefined {
+  return store.orders.find((o) => o.id === orderId && o.userId === userId);
 }
 
 /* -------------------------------- sessão --------------------------------- */

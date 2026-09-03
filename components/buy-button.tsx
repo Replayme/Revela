@@ -17,15 +17,19 @@ export function BuyButton({
   photoId,
   price,
   isSignedIn,
-  alreadyOwned = false,
+  orderId: orderIdInicial = null,
 }: {
   photoId: string;
   price: number;
   isSignedIn: boolean;
-  alreadyOwned?: boolean;
+  /** Pedido já existente desta foto, quando a pessoa já a comprou. */
+  orderId?: string | null;
 }) {
   const router = useRouter();
-  const [estado, setEstado] = useState<Estado>(alreadyOwned ? 'owned' : 'idle');
+  const [estado, setEstado] = useState<Estado>(
+    orderIdInicial ? 'owned' : 'idle',
+  );
+  const [orderId, setOrderId] = useState<string | null>(orderIdInicial);
 
   if (!isSignedIn) {
     return (
@@ -66,6 +70,24 @@ export function BuyButton({
           Esta foto já é sua, para sempre. Comprar de novo não emite outra
           licença nem cobra outra vez.
         </p>
+        {/* O arquivo e o recibo ficam a um clique daqui: o fim da compra é
+            receber o que se comprou, não ver a confirmação. */}
+        {orderId && (
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-signal-ok/25 pt-3.5">
+            <a
+              href={`/api/pedidos/${orderId}/arquivo`}
+              className="text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:text-amber-light"
+            >
+              Baixar arquivo
+            </a>
+            <Link
+              href={`/pedido/${orderId}`}
+              className="text-[11px] font-medium tracking-[0.16em] text-paper-300 uppercase transition-colors hover:text-paper"
+            >
+              Recibo e licença
+            </Link>
+          </div>
+        )}
       </div>
     );
   }
@@ -87,6 +109,8 @@ export function BuyButton({
         setEstado('error');
         return;
       }
+      const data = (await response.json()) as { order?: { id?: string } };
+      setOrderId(data.order?.id ?? null);
       setEstado('owned');
       router.refresh();
     } catch {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useSession } from '@/components/session-provider';
 import { PhotoGrid } from '@/components/photo-grid';
 import { CategoryGrid } from '@/components/category-grid';
 import { PhotographerGrid } from '@/components/photographer-grid';
@@ -61,6 +62,7 @@ const POSTS = [
  */
 export default function HomePage() {
   const router = useRouter();
+  const sessao = useSession();
   const [menuAberto, setMenuAberto] = useState(false);
   const [busca, setBusca] = useState('');
 
@@ -135,13 +137,24 @@ export default function HomePage() {
               <button type="submit">Buscar</button>
             </form>
 
+            {/* A home tem header próprio (CSS module), separado do
+                `SiteHeader` do resto do site — mas quem já entrou precisa
+                achar a conta a partir daqui também. */}
             <div className={styles.acessos}>
-              <Link className={styles.entrar} href="/login">
-                Entrar
-              </Link>
-              <Link className={styles.cta} href="/cadastro-fotografo">
-                Cadastre-se como fotógrafo
-              </Link>
+              {sessao ? (
+                <Link className={styles.cta} href="/dashboard">
+                  Minha conta
+                </Link>
+              ) : (
+                <>
+                  <Link className={styles.entrar} href="/login">
+                    Entrar
+                  </Link>
+                  <Link className={styles.cta} href="/cadastro-fotografo">
+                    Cadastre-se como fotógrafo
+                  </Link>
+                </>
+              )}
               <button
                 className={styles.abrirMenu}
                 aria-expanded={menuAberto}
@@ -177,14 +190,24 @@ export default function HomePage() {
               </li>
               {/* No celular o header esconde o "Entrar"; sem esta entrada quem
                   já tem conta não teria como fazer login pela home. */}
-              <li className={styles.entrarMovel}>
-                <Link href="/login">Entrar</Link>
-              </li>
-              <li>
-                <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/cadastro-fotografo">
-                  Cadastre-se como fotógrafo
-                </Link>
-              </li>
+              {sessao ? (
+                <li>
+                  <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/dashboard">
+                    Minha conta
+                  </Link>
+                </li>
+              ) : (
+                <>
+                  <li className={styles.entrarMovel}>
+                    <Link href="/login">Entrar</Link>
+                  </li>
+                  <li>
+                    <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/cadastro-fotografo">
+                      Cadastre-se como fotógrafo
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </nav>

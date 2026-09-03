@@ -1,8 +1,8 @@
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { createOrder, findOrder, verifySessionToken } from '@/lib/mock-db';
+import { createOrder, findOrder } from '@/lib/mock-db';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 import { findPhoto } from '@/lib/mock-photos';
+import { currentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,8 +18,7 @@ export const dynamic = 'force-dynamic';
  * pagamento no meio. Ver docs/API.md.
  */
 export async function POST(request: Request) {
-  const token = (await cookies()).get('revela_session')?.value;
-  const session = token ? verifySessionToken(token) : null;
+  const session = await currentSession();
 
   if (!session) {
     return NextResponse.json({ error: 'UNAUTHENTICATED' }, { status: 401 });

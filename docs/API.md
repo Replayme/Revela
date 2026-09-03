@@ -1,10 +1,10 @@
-# Revela — contrato da API de autenticação
+# Revela — contrato da API
 
-Este documento é o que o back-end precisa implementar para que a página de
-login funcione em produção. As rotas em `app/api/auth/*` deste projeto são um
-**mock** que já respeita este contrato (mesmos caminhos, mesmos payloads,
-mesmos códigos), então dá para trocar o mock pelo serviço real sem tocar em
-uma linha do front-end.
+Este documento é o que o back-end precisa implementar para que o site funcione
+em produção: autenticação (§1–§10) e pedidos (§11). As rotas em `app/api/*`
+deste projeto são um **mock** que já respeita este contrato (mesmos caminhos,
+mesmos payloads, mesmos códigos), então dá para trocar o mock pelo serviço real
+sem tocar em uma linha do front-end.
 
 Base: `https://<dominio>/api/auth`
 Content-Type de todas as requisições e respostas: `application/json`.
@@ -317,7 +317,83 @@ senha real.
 
 ---
 
-## 11. Checklist antes de ir ao ar
+## 11. Pedidos, licenças e entrega do arquivo
+
+Estas três rotas fecham a transação: emitir a licença, listar o que a pessoa
+tem e entregar o arquivo. Só a primeira já existia; as outras duas vieram com
+o painel da conta.
+
+### `POST /api/pedidos`
+
+```json
+{ "photoId": "p-03" }
+```
+
+**201 — licença emitida**
+
+```json
+{
+  "order": {
+    "id": "ord_3605a88d8302dea4",
+    "userId": "usr_ana",
+    "photoId": "p-03",
+    "pricePaid": 120,
+    "licenseVersion": "1.0",
+    "createdAt": 1788429622096
+  },
+  "alreadyOwned": false
+}
+```
+
+**200 — já era sua.** A licença é perpétua: comprar a mesma foto de novo
+devolve o pedido existente com `alreadyOwned: true`, sem emitir outra nem
+cobrar outra vez.
+
+| HTTP | `error`           | Quando                          |
+| ---- | ----------------- | ------------------------------- |
+| 400  | `VALIDATION`      | Corpo malformado                |
+| 401  | `UNAUTHENTICATED` | Sem sessão válida               |
+| 404  | `PHOTO_NOT_FOUND` | `photoId` fora do acervo        |
+
+Dois campos existem para não mudar o passado: `pricePaid` guarda o valor no
+momento da compra, e `licenseVersion` a versão do texto aceito. Mexer na
+tabela de preços ou reescrever a licença não pode alterar um pedido antigo.
+
+**Falta o pagamento.** Hoje o pedido é registrado direto. O passo real é:
+criar o pedido como `pending`, mandar para o provedor (Stripe, Pagar.me), e
+só marcar `paid` — o que libera o download — no **webhook** de confirmação,
+nunca no retorno do navegador, que a pessoa controla.
+
+### `GET /api/pedidos/<id>/arquivo`
+
+Entrega o arquivo de um pedido. Responde `307` para a URL do arquivo.
+
+| HTTP | `error`           | Quando                                   |
+| ---- | ----------------- | ---------------------------------------- |
+| 401  | `UNAUTHENTICATED` | Sem sessão válida                        |
+| 404  | `ORDER_NOT_FOUND` | Pedido inexistente **ou de outra pessoa** |
+| 404  | `PHOTO_NOT_FOUND` | Pedido íntegro, foto fora do acervo      |
+
+Três decisões que valem para a versão real:
+
+- **o download passa pelo servidor.** Colocar a URL do arquivo direto no botão
+  publica o endereço do original para quem abrir o código-fonte, tenha
+  comprado ou não;
+- **pedido de outra pessoa responde 404, não 403.** "Existe, mas não é seu" já
+  entrega quantos pedidos o site tem;
+- **em produção, URL assinada de vida curta** (minutos) para um bucket
+  privado, com `Content-Disposition: attachment` e `Cache-Control: no-store`.
+  A rota confere a posse a cada pedido e só então assina.
+
+### `GET /api/pedidos` — ainda não existe
+
+O painel (`/dashboard`) lê os pedidos direto do "banco" porque é um componente
+de servidor no mesmo processo. Quando o back-end sair daqui, esta rota é a que
+ele precisa expor: os pedidos da sessão, mais recentes primeiro, paginados.
+
+---
+
+## 12. Checklist antes de ir ao ar
 
 - [ ] Trocar `lib/mock-db.ts` por banco real com argon2id
 - [ ] Rate limiting em Redis ou no gateway, não em memória
@@ -328,5 +404,7 @@ senha real.
 - [ ] Log de tentativas de login (IP, user agent, resultado) sem gravar a senha
 - [ ] Alerta por e-mail em login de dispositivo novo e em troca de senha
 - [ ] Decidir §7 (enumeração) e registrar a decisão
-- [ ] `middleware.ts` protegendo `/dashboard` e demais rotas privadas
+- [ ] `middleware.ts` protegendo `/dashboard`, `/pedido/*` e a rota do arquivo
+- [ ] Pagamento antes de liberar o download, confirmado por webhook (§11)
+- [ ] Arquivo em bucket privado, entregue por URL assinada de vida curta (§11)
 - [ ] Testar com teclado e leitor de tela: foco visível, erros anunciados

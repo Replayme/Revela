@@ -52,3 +52,19 @@ export const UNIVERSAL_LICENSE: License = {
 export function licenseLabel(license: License = UNIVERSAL_LICENSE): string {
   return `${license.name} v${license.version}`;
 }
+
+/**
+ * O texto de uma versão específica — é o que o recibo precisa mostrar.
+ *
+ * Hoje só existe a 1.0, então o arquivo é o próprio "arquivo de versões". Ao
+ * subir a versão, a anterior fica aqui: quem comprou com a 1.0 tem direito ao
+ * texto da 1.0, e um recibo que exibisse a licença atual estaria mostrando um
+ * contrato que aquela pessoa nunca aceitou.
+ */
+const VERSIONS: Record<string, License> = {
+  [UNIVERSAL_LICENSE.version]: UNIVERSAL_LICENSE,
+};
+
+export function licenseByVersion(version: string): License | undefined {
+  return VERSIONS[version];
+}
