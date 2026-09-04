@@ -234,6 +234,22 @@ export function findOrderById(userId: string, orderId: string): Order | undefine
   return store.orders.find((o) => o.id === orderId && o.userId === userId);
 }
 
+/**
+ * Os pedidos de uma foto — o outro lado da transação, para o painel de quem a
+ * publicou.
+ *
+ * Diferente das buscas acima, esta **não** é filtrada por dono, e não é
+ * descuido: quem pergunta aqui é o autor da foto, e ele não é o dono de
+ * nenhum destes pedidos. A conferência de que a foto é mesmo dele fica com
+ * quem chama, porque é lá que existe o vínculo entre conta e autor.
+ *
+ * Nunca devolva isto a um cliente sem essa conferência: a lista diz quem
+ * comprou o quê.
+ */
+export function ordersByPhoto(photoId: string): Order[] {
+  return store.orders.filter((o) => o.photoId === photoId);
+}
+
 /* ------------------------------- favoritos ------------------------------- */
 
 /**

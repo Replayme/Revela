@@ -34,8 +34,14 @@ export interface PhotographerPhoto extends Photo {
    * esse tipo de número que saiu da tela no commit anterior.
    */
   revenue: number;
-  /** Última alteração na ficha — é por ela que a lista se ordena. */
-  updatedAt: number;
+  /**
+   * Última alteração na ficha.
+   *
+   * Opcional porque o catálogo de demonstração não a tem, e uma data inventada
+   * — a de hoje, a do primeiro pedido — seria pior que data nenhuma: ela
+   * *parece* informação. Sem ela, o card simplesmente não mostra data.
+   */
+  updatedAt?: number;
 }
 
 /** O rótulo de cada estado, na voz do site. */

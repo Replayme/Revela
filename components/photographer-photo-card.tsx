@@ -104,10 +104,18 @@ export function PhotographerPhotoCard({
           )}
         </p>
 
+        {/*
+          A régua de baixo só entra se houver o que pôr nela. Enquanto as
+          rotas do painel não existem, nenhuma ação é passada — e uma linha
+          divisória sobre o vazio anuncia um rodapé que não há.
+        */}
+        {(photo.updatedAt || editHref || onToggleStatus || onDelete) && (
         <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-paper/10 pt-3">
-          <span className="font-mono text-[11px] tracking-[0.12em] text-paper-500 uppercase">
-            {formatDate(photo.updatedAt)}
-          </span>
+          {photo.updatedAt && (
+            <span className="font-mono text-[11px] tracking-[0.12em] text-paper-500 uppercase">
+              {formatDate(photo.updatedAt)}
+            </span>
+          )}
 
           {editHref && (
             <Link
@@ -134,6 +142,7 @@ export function PhotographerPhotoCard({
             <DeleteAction photo={photo} onDelete={onDelete} busy={busy} />
           )}
         </div>
+        )}
       </div>
     </article>
   );
