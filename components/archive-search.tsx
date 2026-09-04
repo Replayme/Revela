@@ -240,9 +240,24 @@ function Filtros({
   aoLimpar: () => void;
 }) {
   return (
-    // No celular os filtros ficam recolhidos: numa tela estreita eles
-    // empurrariam as fotos para baixo da dobra, e é a foto que a pessoa veio ver.
-    <details className="group border border-paper/12 lg:border-0 [&>summary]:lg:hidden [&:not([open])>div]:lg:block">
+    /*
+      No celular os filtros ficam recolhidos: numa tela estreita eles
+      empurrariam as fotos para baixo da dobra, e é a foto que a pessoa veio
+      ver. No desktop viram uma coluna sempre aberta — e é o desktop que exige
+      a última classe.
+
+      `[&:not([open])>div]:lg:block` sozinho parou de funcionar: o Chromium 131
+      passou a esconder o conteúdo de um `<details>` fechado pelo pseudo-elemento
+      `::details-content`, com `content-visibility: hidden`, e isso não se
+      derruba mudando o `display` de um filho. Como o `<summary>` também está
+      oculto a partir de `lg`, os filtros sumiram inteiros no desktop — sem
+      categoria, sem orientação, sem teto de preço e sem como reabrir —, e a
+      coluna de 240px ficou reservada para nada.
+
+      As duas classes ficam: a do `display` atende quem ainda não tem o
+      pseudo-elemento, a de `content-visibility` atende quem já tem.
+    */
+    <details className="group border border-paper/12 lg:border-0 [&>summary]:lg:hidden [&:not([open])>div]:lg:block lg:[&::details-content]:[content-visibility:visible]">
       <summary className="cursor-pointer list-none px-4 py-3 text-[11px] font-semibold tracking-[0.16em] text-paper uppercase marker:content-none">
         Filtros
         <span aria-hidden className="float-right text-paper-500 group-open:hidden">
