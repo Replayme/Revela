@@ -1,29 +1,15 @@
 import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
-/**
- * "Banco" em memória — SOMENTE PARA DEMONSTRAÇÃO do fluxo de ponta a ponta.
- * Some a cada restart do servidor. Substitua por Postgres/Prisma.
- *
- * O que aqui já está certo e deve ser mantido em produção:
- *  - a senha nunca é guardada em texto plano (scrypt com salt por usuário);
- *  - a comparação de hashes é feita em tempo constante;
- *  - o token de reset é guardado como hash, não como o valor enviado no e-mail;
- *  - o token de reset expira em 24h e é de uso único.
- *
- * O que MUDA em produção: use argon2id (ou bcrypt cost >= 12) em vez de scrypt
- * manual, e assine sessões com uma biblioteca de JWT/`jose` com chave rotacionável.
- */
-
 const SESSION_SECRET =
   process.env.AUTH_SECRET ?? 'dev-only-secret-troque-em-producao';
 
-export const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+export const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  passwordHash: string; // formato: scrypt$<salt hex>$<hash hex>
+  passwordHash: string;
   disabled?: boolean;
 }
 
@@ -42,24 +28,10 @@ export function verifyPassword(password: string, stored: string): boolean {
   return timingSafeEqual(derived, expected);
 }
 
-/**
- * Estado mutável do mock, guardado no `globalThis`.
- *
- * Rotas de API e componentes de servidor são empacotados separadamente: cada
- * bundle carrega a sua cópia deste módulo, com o seu próprio array. Sem um
- * ponto comum, a compra registrada pela rota some quando a página vai ler —
- * foi exatamente o que aconteceu no teste. `globalThis` é o mesmo objeto para
- * todos os bundles do processo; é o truque que a documentação do Prisma usa
- * pelo mesmo motivo.
- *
- * Continua valendo para UM processo. Em serverless cada instância tem a sua
- * memória, e nem isto salva — é mais uma razão para o banco real entrar aqui.
- */
 interface MockStore {
   users: User[];
   orders: Order[];
   resetTokens: Map<string, ResetRecord>;
-  /** Favoritos por usuário: id do usuário → ids das fotos. */
   favorites: Map<string, Set<string>>;
 }
 
@@ -67,7 +39,6 @@ const globalStore = globalThis as typeof globalThis & {
   __revelaMockStore?: MockStore;
 };
 
-// Contas de demonstração.
 const seedUsers: User[] = [
   {
     id: 'usr_ana',
@@ -106,16 +77,6 @@ export type CreateUserResult =
   | { ok: true; user: User }
   | { ok: false; reason: 'EMAIL_TAKEN' };
 
-/**
- * Cria a conta do fotógrafo.
- *
- * O e-mail é normalizado (minúsculas, sem espaços nas pontas) antes de virar
- * chave: sem isso "Ana@Revela.com" abriria uma segunda conta e ninguém mais
- * conseguiria entrar em nenhuma das duas com certeza.
- *
- * Em produção a unicidade tem que ser um índice único na coluna, não esta
- * verificação — entre o `findUserByEmail` e o `push` cabe outra requisição.
- */
 export function createUser(input: {
   name: string;
   email: string;
@@ -141,8 +102,6 @@ export function updatePassword(userId: string, password: string): boolean {
   return true;
 }
 
-/* ------------------------------ reset tokens ----------------------------- */
-
 interface ResetRecord {
   userId: string;
   tokenHash: string;
@@ -154,7 +113,6 @@ function hashToken(token: string): string {
   return createHmac('sha256', SESSION_SECRET).update(token).digest('hex');
 }
 
-/** Cria o token de reset e devolve o valor bruto (só ele vai no e-mail). */
 export function createResetToken(userId: string): string {
   const token = randomBytes(32).toString('base64url');
   const tokenHash = hashToken(token);
@@ -182,15 +140,11 @@ export function consumeResetToken(token: string): ResetCheck {
   return { ok: true, userId: record.userId };
 }
 
-/* -------------------------------- pedidos -------------------------------- */
-
 export interface Order {
   id: string;
   userId: string;
   photoId: string;
-  /** Preço no momento da compra: mudar a tabela não muda o que já foi pago. */
   pricePaid: number;
-  /** Versão da licença aceita: reescrever o texto não altera pedidos antigos. */
   licenseVersion: string;
   createdAt: number;
 }
@@ -214,52 +168,20 @@ export function findOrder(userId: string, photoId: string): Order | undefined {
   return store.orders.find((o) => o.userId === userId && o.photoId === photoId);
 }
 
-/**
- * Pedidos de um usuário, do mais recente para o mais antigo — é a ordem em
- * que o painel lista as licenças.
- */
 export function ordersByUser(userId: string): Order[] {
   return store.orders
     .filter((o) => o.userId === userId)
     .sort((a, b) => b.createdAt - a.createdAt);
 }
 
-/**
- * Um pedido pelo id, **já filtrado pelo dono**. A busca recebe o usuário de
- * propósito: um `findById` puro deixaria a checagem de dono a cargo de quem
- * chama, e é assim que um dia alguém lê o recibo de outra pessoa trocando o
- * id na URL.
- */
 export function findOrderById(userId: string, orderId: string): Order | undefined {
   return store.orders.find((o) => o.id === orderId && o.userId === userId);
 }
 
-/**
- * Os pedidos de uma foto — o outro lado da transação, para o painel de quem a
- * publicou.
- *
- * Diferente das buscas acima, esta **não** é filtrada por dono, e não é
- * descuido: quem pergunta aqui é o autor da foto, e ele não é o dono de
- * nenhum destes pedidos. A conferência de que a foto é mesmo dele fica com
- * quem chama, porque é lá que existe o vínculo entre conta e autor.
- *
- * Nunca devolva isto a um cliente sem essa conferência: a lista diz quem
- * comprou o quê.
- */
 export function ordersByPhoto(photoId: string): Order[] {
   return store.orders.filter((o) => o.photoId === photoId);
 }
 
-/* ------------------------------- favoritos ------------------------------- */
-
-/**
- * Favoritar é de quem favorita.
- *
- * Antes `isFavorited` era campo da foto, no catálogo: o mesmo coração para
- * todo visitante, igual para quem nunca entrou, e perdido no reload. Salvar
- * uma foto só quer dizer alguma coisa se for a *sua* lista — daí a chave ser
- * o usuário.
- */
 export function favoritesByUser(userId: string): string[] {
   return [...(store.favorites.get(userId) ?? [])];
 }
@@ -268,7 +190,6 @@ export function isFavorited(userId: string, photoId: string): boolean {
   return store.favorites.get(userId)?.has(photoId) ?? false;
 }
 
-/** Alterna e devolve o estado que ficou, que é o que a tela precisa saber. */
 export function toggleFavorite(userId: string, photoId: string): boolean {
   const atuais = store.favorites.get(userId) ?? new Set<string>();
   const favoritada = !atuais.has(photoId);
@@ -280,8 +201,6 @@ export function toggleFavorite(userId: string, photoId: string): boolean {
   return favoritada;
 }
 
-/* -------------------------------- sessão --------------------------------- */
-
 export interface SessionPayload {
   sub: string;
   name: string;
@@ -289,11 +208,6 @@ export interface SessionPayload {
   exp: number;
 }
 
-/**
- * Token de sessão assinado (HMAC-SHA256), no mesmo formato de um JWT compacto.
- * Em produção use `jose`/`jsonwebtoken` com chave rotacionável e, se houver
- * refresh token, guarde-o no servidor para poder revogar.
- */
 export function issueSessionToken(user: User, remember: boolean): string {
   const ttlMs = remember ? 30 * 24 * 60 * 60 * 1000 : 12 * 60 * 60 * 1000;
   const payload: SessionPayload = {

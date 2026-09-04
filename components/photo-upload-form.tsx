@@ -14,30 +14,10 @@ import { IconImage, IconUpload } from './icons';
 import { mockCategories } from '@/lib/mock-categories';
 import { formatFileSize, formatPrice } from '@/lib/format';
 
-/**
- * O formulário de publicar uma foto.
- *
- * **Ele não fala com o servidor.** Recebe `onSubmit` e devolve o rascunho
- * pronto; quem o monta decide para onde vai. Enquanto `POST /api/fotos` não
- * existir, a tela que usa este componente é que segura a resposta — e o dia em
- * que existir, nada aqui muda.
- *
- * As medidas do arquivo **não são campos**: saem da própria imagem assim que
- * ela é escolhida. Pedir largura e altura a quem envia é pedir que a pessoa
- * repita o que o navegador já sabe, e a metade das fichas do acervo sairia com
- * número errado.
- */
-
-/** O que sai daqui quando o formulário é enviado. */
 export interface PhotoDraft {
   title: string;
   category: string;
-  /** Em reais. O campo aceita vírgula; isto aqui já é número. */
   price: number;
-  /**
-   * O arquivo escolhido. `null` só na edição de uma foto que já existe e cujo
-   * arquivo não foi trocado.
-   */
   file: File | null;
   width: number;
   height: number;
@@ -47,14 +27,8 @@ export interface PhotoDraft {
 const TIPOS_ACEITOS = ['image/jpeg', 'image/png'];
 const TAMANHO_MAX = 25 * 1024 * 1024;
 
-/**
- * O acervo entrega arquivos de 2000×3000 e cobra por eles. Um JPEG de 800px de
- * lado não dá para imprimir nem para uma capa — e quem descobre isso depois de
- * pagar é o comprador. A barreira fica na entrada.
- */
 const LADO_MINIMO = 1600;
 
-/** Preço em texto ("89,90" ou "89.90") → número. `NaN` quando não é preço. */
 function parsePrice(valor: string): number {
   const limpo = valor.replace(/\s/g, '').replace(',', '.');
   if (!/^\d+(\.\d{1,2})?$/.test(limpo)) return NaN;
@@ -74,7 +48,6 @@ export function PhotoUploadForm({
   onSubmit,
   onCancel,
 }: {
-  /** Preenche o formulário para edição. Ausente, é uma foto nova. */
   initial?: Partial<Pick<PhotoDraft, 'title' | 'category' | 'price'>> & {
     thumbnailUrl?: string;
     width?: number;
@@ -90,9 +63,6 @@ export function PhotoUploadForm({
   const [categoria, setCategoria] = useState(
     initial?.category ?? mockCategories[0]?.name ?? '',
   );
-  // `toFixed(2)` e não `String(price)`: 89.9 chegaria ao campo como "89,9",
-  // e um campo de dinheiro que abre com um centavo faltando parece defeito de
-  // quem salvou, não de quem preencheu.
   const [preco, setPreco] = useState(
     initial?.price != null ? initial.price.toFixed(2).replace('.', ',') : '',
   );
@@ -100,35 +70,14 @@ export function PhotoUploadForm({
   const [erroArquivo, setErroArquivo] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
-  /**
-   * Antes do primeiro envio o formulário fica calado: apontar "título curto
-   * demais" para quem ainda está digitando a primeira letra é ruído. Depois
-   * dele, a conferência passa a ser a cada tecla — senão a mensagem de erro
-   * fica na tela depois do campo já ter sido corrigido, dizendo o contrário do
-   * que se vê.
-   */
   const [tentouEnviar, setTentouEnviar] = useState(false);
 
   const inputArquivoRef = useRef<HTMLInputElement>(null);
   const categoriaId = useId();
 
-  /**
-   * O `blob:` fica preso na memória do navegador até alguém o soltar — trocar
-   * de arquivo cinco vezes deixaria cinco imagens presas.
-   *
-   * Soltar isso na limpeza de um `useEffect([selecao])` é o que parece certo e
-   * não é: com o StrictMode ligado (o padrão do Next em desenvolvimento) o
-   * efeito monta, limpa e monta de novo, e a limpeza revoga o endereço da
-   * seleção que acabou de entrar. O preview nasce quebrado, e só em
-   * desenvolvimento — o pior lugar para um bug se esconder. Então o endereço
-   * antigo é revogado no momento em que o novo o substitui, que é quando isso
-   * de fato acontece.
-   */
   const urlPreview = useRef<string | null>(null);
 
   useEffect(() => {
-    // No desmonte, e só nele. Na primeira montagem ainda não há o que soltar,
-    // então a dobra do StrictMode aqui não custa nada.
     return () => {
       if (urlPreview.current) URL.revokeObjectURL(urlPreview.current);
     };
@@ -198,8 +147,6 @@ export function PhotoUploadForm({
     return encontrados;
   }
 
-  // Derivado, não guardado: um `useState` de erros teria que ser limpo campo a
-  // campo a cada tecla, e é sempre um campo que se esquece.
   const erros: Record<string, string> = tentouEnviar ? validar() : {};
 
   async function enviar(event: FormEvent) {
@@ -228,8 +175,6 @@ export function PhotoUploadForm({
         orientation: width >= height ? 'horizontal' : 'vertical',
       });
     } catch (erro) {
-      // A mensagem do erro não vai crua para a tela pelo mesmo motivo do
-      // `app/error.tsx`: ela carrega detalhe de implementação.
       console.error('Falha ao salvar a foto:', erro);
       setFalha('Não deu para salvar agora. Tente de novo em instantes.');
     } finally {
@@ -324,14 +269,6 @@ export function PhotoUploadForm({
   );
 }
 
-/**
- * A área do arquivo: clique ou arrasta.
- *
- * O `<input type="file">` continua sendo o controle de verdade — a área
- * arrastável é um `<label>` em cima dele. Trocar o input por uma `<div>` com
- * `onClick` custaria o foco por teclado e o anúncio do leitor de tela, que é o
- * que este campo tem de graça.
- */
 function FileField({
   ref,
   selecao,
@@ -439,7 +376,6 @@ function FileField({
   );
 }
 
-/** Largura e altura reais do arquivo, ou `null` se o navegador não o abrir. */
 function medirImagem(
   url: string,
 ): Promise<{ width: number; height: number } | null> {

@@ -2,8 +2,6 @@
 const nextConfig = {
   poweredByHeader: false,
   images: {
-    // Host das fotos de demonstração (lib/mock-photos.ts). Trocar pelo CDN do
-    // acervo quando as fotos reais entrarem.
     remotePatterns: [{ protocol: 'https', hostname: 'picsum.photos' }],
   },
   async headers() {
@@ -11,8 +9,6 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
-          // HTTPS obrigatório: força o navegador a nunca mais usar HTTP neste domínio.
-          // Só tem efeito quando servido via HTTPS (produção).
           {
             key: 'Strict-Transport-Security',
             value: 'max-age=63072000; includeSubDomains; preload',

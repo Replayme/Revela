@@ -5,17 +5,8 @@ import { IconStar } from './icons';
 import { formatCount, formatRating } from '@/lib/format';
 import type { Photographer } from '@/lib/mock-photographers';
 
-/** Três colunas no desktop, uma no celular. */
 const SIZES = '(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw';
 
-/**
- * Fotógrafo em destaque: capa de um trabalho recente, retrato sobreposto e as
- * duas medidas que dizem se vale abrir o perfil — acervo publicado e nota.
- *
- * "Ver perfil" é o único link do card e cobre a moldura inteira pelo
- * pseudo-elemento esticado: uma parada de tabulação, card todo clicável, e o
- * mesmo destino não aparece duas vezes para quem navega por teclado.
- */
 export function PhotographerCard({
   photographer,
 }: {
@@ -36,8 +27,6 @@ export function PhotographerCard({
             className="object-cover"
           />
 
-          {/* Retrato meio dentro da capa, meio no papel: costura as duas metades
-              do card sem precisar de uma faixa divisória. */}
           <div className="absolute -bottom-8 left-4 size-16 overflow-hidden border-[3px] border-paper bg-prussia-800 sm:left-5">
             <Image
               src={photographer.avatarUrl}
@@ -70,9 +59,6 @@ export function PhotographerCard({
             <Link
               href={`/perfil/${photographer.id}`}
               aria-label={`Ver o perfil de ${photographer.name}`}
-              // Anel de foco no pseudo-elemento que cobre o card. O `!` em
-              // outline-none é necessário: a regra de foco do globals.css está
-              // fora de @layer e vence utilitários do Tailwind.
               className="text-sm font-medium text-prussia-800 underline decoration-prussia-800/25 decoration-2 underline-offset-4 transition-colors group-hover:decoration-amber after:absolute after:inset-0 focus-visible:outline-none! focus-visible:after:[outline:2px_solid_var(--color-amber)] focus-visible:after:[outline-offset:2px]"
             >
               Ver perfil
@@ -84,7 +70,6 @@ export function PhotographerCard({
   );
 }
 
-/** Mesma moldura e mesmas proporções do card, sem conteúdo. */
 export function PhotographerCardSkeleton() {
   return (
     <FilmFrame markings={false} className="h-full">

@@ -1,8 +1,3 @@
-/**
- * Fotógrafos em destaque. Os ids batem com `photographer.id` de
- * `lib/mock-photos.ts`: são as mesmas pessoas que assinam as fotos do acervo.
- */
-
 export interface Photographer {
   id: string;
   name: string;
