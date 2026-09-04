@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLocale } from './locale-provider';
 import { useSession } from './session-provider';
-import { LanguageSwitcher } from './language-switcher';
 import { Logo } from './logo';
 import { IconSearch } from './icons';
 import type { MessageKey } from '@/lib/i18n';
@@ -133,7 +132,6 @@ export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) 
           </nav>
 
           <div className="flex shrink-0 items-center gap-4 py-2">
-            <LanguageSwitcher />
             {session ? (
               <>
                 {/* O nome some no celular; o que não pode sumir é o caminho

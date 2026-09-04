@@ -1,83 +1,46 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
-import {
-  DEFAULT_LOCALE,
-  LOCALES,
-  translate,
-  type Locale,
-  type MessageKey,
-} from '@/lib/i18n';
+import { createContext, useContext, type ReactNode } from 'react';
+import { DEFAULT_LOCALE, translate, type MessageKey } from '@/lib/i18n';
 
-const STORAGE_KEY = 'revela.locale';
+/**
+ * O idioma da interface — hoje, um só.
+ *
+ * **O alternador PT/EN saiu da tela, e este provedor deixou de trocar de
+ * idioma junto.** O motivo é o mesmo que já tinha tirado daqui a detecção pelo
+ * navegador: só o header, as telas de acesso e este formulário estão
+ * traduzidos. Home, acervo, ficha da foto, perfil, recibo, licença e o painel
+ * de quem vende são texto fixo em português.
+ *
+ * Escolher "EN" entregava, então, um header em inglês sobre um site em
+ * português. Da primeira vez isso foi tratado como aceitável porque a escolha
+ * era manual — a pessoa tinha pedido. Não era: ninguém que clica em "EN" está
+ * pedindo o cabeçalho em inglês, está pedindo o site. Um controle que não
+ * entrega o que promete é o mesmo caso do botão de favoritar que anunciava
+ * estado e não mudava nada, e a regra que vale para ele vale para este.
+ *
+ * **Nada da tradução foi jogado fora.** `lib/i18n.ts` continua com as duas
+ * línguas e as chaves de sempre, e `t()` segue sendo por onde o texto do header
+ * e das telas de acesso passa — é o começo do trabalho, não um resto dele.
+ * Quando o conteúdo estiver traduzido, voltam três coisas: o estado do idioma
+ * aqui, o `<LanguageSwitcher />` no header, e a detecção pelo navegador.
+ */
 
 interface LocaleContextValue {
-  locale: Locale;
-  setLocale: (locale: Locale) => void;
   t: (key: MessageKey, vars?: Record<string, string | number>) => string;
 }
+
+// Valor constante e fora do componente: sem idioma para trocar, um `useMemo`
+// aqui dentro seria cerimônia em volta de um objeto que nunca muda.
+const FIXED: LocaleContextValue = {
+  t: (key, vars) => translate(DEFAULT_LOCALE, key, vars),
+};
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  // Começa sempre no padrão para que servidor e cliente rendam igual;
-  // a preferência salva é aplicada logo depois da hidratação.
-  const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved && (LOCALES as readonly string[]).includes(saved)) {
-        setLocaleState(saved as Locale);
-        return;
-      }
-    } catch {
-      /* localStorage indisponível (modo privado): segue com o padrão */
-    }
-    // A detecção pelo idioma do navegador saiu daqui de propósito.
-    //
-    // Só o header e as telas de acesso estão traduzidos; foto, perfil, acervo,
-    // painel, recibo e licença são texto fixo em português. Detectar "en"
-    // entregava, para qualquer visitante de navegador em inglês, um header em
-    // inglês sobre um site em português — sem que ninguém tivesse pedido.
-    //
-    // O alternador PT/EN continua funcionando e a escolha continua sendo
-    // lembrada. Quando o conteúdo estiver traduzido, a detecção volta: são
-    // estas quatro linhas de volta ao lugar.
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.lang = locale === 'pt' ? 'pt-BR' : 'en';
-  }, [locale]);
-
-  const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* preferência não persiste, mas a troca funciona nesta sessão */
-    }
-  }, []);
-
-  const value = useMemo<LocaleContextValue>(
-    () => ({
-      locale,
-      setLocale,
-      t: (key, vars) => translate(locale, key, vars),
-    }),
-    [locale, setLocale],
-  );
-
   return (
-    <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
+    <LocaleContext.Provider value={FIXED}>{children}</LocaleContext.Provider>
   );
 }
 
