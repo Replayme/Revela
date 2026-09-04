@@ -22,11 +22,17 @@ export function PhotographerStats({ summary }: { summary: PhotographerSummary })
         value={formatCount(summary.sales)}
       />
       {/*
-        O valor ocupa a linha inteira no celular: com duas colunas ele cairia
-        sozinho na última, e "R$ 1.234,50" é o número mais largo dos três.
+        "Em licenças", e não "Recebido": não há cobrança no site — o
+        `docs/API.md` §11 registra que o pedido é gravado direto, sem provedor
+        de pagamento. O número é verdadeiro (é a soma do que foi pago em cada
+        pedido), mas a palavra "recebido" prometia um repasse que não
+        aconteceu, e prometer dinheiro é a pior maneira de errar um rótulo.
+
+        Ele ocupa a linha inteira no celular: com duas colunas cairia sozinho
+        na última, e "R$ 1.234,50" é o número mais largo dos três.
       */}
       <Stat
-        label="Recebido"
+        label="Em licenças"
         value={formatPrice(summary.revenue)}
         className="col-span-2 sm:col-span-1"
       />

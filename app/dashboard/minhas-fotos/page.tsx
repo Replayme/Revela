@@ -5,7 +5,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { PhotographerStats } from '@/components/photographer-stats';
 import { PhotographerPhotoCard } from '@/components/photographer-photo-card';
 import { NotAnAuthor } from '@/components/not-an-author';
-import { IconArrowLeft, IconImage, IconUpload } from '@/components/icons';
+import { IconArrowLeft, IconImage, IconLicense, IconUpload } from '@/components/icons';
 import { painelDoAutor } from '@/lib/mock-photographer-panel';
 import { summarize } from '@/lib/photographer-panel';
 import { currentSession } from '@/lib/session';
@@ -101,6 +101,17 @@ function Painel({ painel }: { painel: NonNullable<ReturnType<typeof painelDoAuto
 
       <div className="mt-8">
         <PhotographerStats summary={resumo} />
+        {resumo.sales > 0 && (
+          <p className="mt-3.5">
+            <Link
+              href="/dashboard/vendas"
+              className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:text-amber-light"
+            >
+              <IconLicense width={14} height={14} />
+              Ver o histórico de vendas
+            </Link>
+          </p>
+        )}
       </div>
 
       <section className="mt-12 border-t-2 border-paper/15 pt-8">

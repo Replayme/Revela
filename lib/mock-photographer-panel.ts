@@ -1,4 +1,4 @@
-import { ordersByPhoto } from './mock-db';
+import { ordersByPhoto, type Order } from './mock-db';
 import { photosByPhotographer } from './mock-photos';
 import { findPhotographer, type Photographer } from './mock-photographers';
 import type { PhotographerPhoto } from './photographer-panel';
@@ -62,6 +62,32 @@ export function fotoDoAutor(
   photoId: string,
 ): PhotographerPhoto | undefined {
   return painelDoAutor(email)?.photos.find((photo) => photo.id === photoId);
+}
+
+/** Uma licença emitida de uma foto do autor, com a foto junto. */
+export interface VendaDoAutor {
+  order: Order;
+  photo: PhotographerPhoto;
+}
+
+/**
+ * Todas as licenças emitidas das fotos do autor, da mais recente para a mais
+ * antiga.
+ *
+ * **Quem comprou não vem junto de propósito.** O `Order` tem o `userId`, e
+ * seria de uma linha trazê-lo — mas ninguém decidiu que o autor pode saber a
+ * identidade de quem licencia, e o modelo do site não precisa disso para
+ * funcionar. Entre expor uma pessoa por descuido e deixar de mostrar um dado
+ * que ninguém pediu, a escolha é fácil. O dia em que houver uma decisão
+ * escrita, ela entra aqui.
+ */
+export function vendasDoAutor(email: string): VendaDoAutor[] {
+  const painel = painelDoAutor(email);
+  if (!painel) return [];
+
+  return painel.photos
+    .flatMap((photo) => ordersByPhoto(photo.id).map((order) => ({ order, photo })))
+    .sort((a, b) => b.order.createdAt - a.order.createdAt);
 }
 
 /**
