@@ -1,8 +1,3 @@
-/**
- * Acervo de demonstração da home. Substituir por `GET /api/fotos` quando o
- * back-end existir — a interface `Photo` já é o formato esperado na resposta.
- */
-
 export interface Photo {
   id: string;
   title: string;
@@ -10,25 +5,17 @@ export interface Photo {
   price: number;
   rating: number;
   thumbnailUrl: string;
-  /** Arquivo em resolução de entrega — só sai por `/api/pedidos/<id>/arquivo`. */
   fullUrl: string;
-  /** Medida do arquivo entregue, em pixels. É o que a ficha da foto mostra. */
   width: number;
   height: number;
   category: string;
   orientation: 'horizontal' | 'vertical';
 }
 
-/** Imagem determinística por id — o mesmo id devolve sempre a mesma foto. */
 function thumbnailFor(id: string): string {
   return `https://picsum.photos/seed/${id}/800/600`;
 }
 
-/**
- * O arquivo grande. No mock é a mesma imagem em outra medida; em produção é o
- * original no bucket privado, alcançado por URL assinada de vida curta — o
- * endereço nunca fica na página, senão a licença vira um link para copiar.
- */
 function dimensionsFor(orientation: Photo['orientation']): [number, number] {
   return orientation === 'vertical' ? [2000, 3000] : [3000, 2000];
 }

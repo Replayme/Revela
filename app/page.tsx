@@ -24,21 +24,13 @@ const PERFIS = [
   { slug: 'leticia-sa', nome: 'Letícia Sá', cidade: 'Fortaleza' },
 ];
 
-/**
- * Home do Revela — marketplace de fotógrafos. Substitui o placeholder
- * anterior (adaptado do mockup revela.html enviado para o projeto).
- */
 export default function HomePage() {
   const router = useRouter();
   const sessao = useSession();
-  // O favorito é do usuário, não da cópia local do catálogo: alternar aqui
-  // pintava o coração e perdia tudo no reload.
   const { favorites, toggle: alternarFavorita } = useFavorites();
   const [menuAberto, setMenuAberto] = useState(false);
   const [busca, setBusca] = useState('');
 
-  // `null` = ainda carregando. O atraso simula a ida ao back-end para que o
-  // skeleton apareça; trocar por `fetch('/api/fotos')` quando ele existir.
   const [fotos, setFotos] = useState<Photo[] | null>(null);
 
   useEffect(() => {
@@ -100,9 +92,6 @@ export default function HomePage() {
               <button type="submit">Buscar</button>
             </form>
 
-            {/* A home tem header próprio (CSS module), separado do
-                `SiteHeader` do resto do site — mas quem já entrou precisa
-                achar a conta a partir daqui também. */}
             <div className={styles.acessos}>
               {sessao ? (
                 <Link className={styles.cta} href="/dashboard">
@@ -142,16 +131,12 @@ export default function HomePage() {
                   Explorar
                 </Link>
               </li>
-              {/* Âncoras, não rotas: as duas seções são desta página. Antes
-                  eram links para /categorias e /sobre, que nunca existiram. */}
               <li>
                 <Link href="/#categorias">Categorias</Link>
               </li>
               <li>
                 <Link href="/#sobre">Sobre</Link>
               </li>
-              {/* No celular o header esconde o "Entrar"; sem esta entrada quem
-                  já tem conta não teria como fazer login pela home. */}
               {sessao ? (
                 <li>
                   <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/dashboard">
@@ -198,8 +183,6 @@ export default function HomePage() {
             </div>
             <div className={styles.filme}>
               {PERFIS.map((perfil) => {
-                // A moldura já tinha o degradê de multiply por cima; faltava a
-                // foto embaixo dele. "Compare portfólios" pede portfólio à vista.
                 const capa = findPhotographer(perfil.slug)?.coverPhotoUrl;
                 return (
                   <Link key={perfil.slug} className={styles.quadro} href={`/perfil/${perfil.slug}`}>
@@ -252,8 +235,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Sem `.bloco`/`.wrap`: a faixa escura sangra de ponta a ponta e traz
-            o próprio contêiner interno. */}
         <ValueSection />
 
         <section className={styles.bloco} id="categorias">
@@ -263,10 +244,6 @@ export default function HomePage() {
               Cada foto entra numa especialidade. Clicar aqui abre o acervo já
               filtrado por ela.
             </p>
-            {/* A lista vem de `mockCategories`, que é derivada das próprias
-                fotos: toda categoria oferecida tem resultado. A lista escrita
-                à mão que estava aqui levava para /categorias/{slug}, uma rota
-                que nunca existiu. */}
             <div className={styles.categorias}>
               {mockCategories.map((categoria) => (
                 <Link
@@ -296,12 +273,6 @@ export default function HomePage() {
               </p>
               <p>Não cobramos comissão sobre o trabalho entregue.</p>
             </div>
-            {/* Aqui havia "1.940 fotógrafos" e "214 cidades" — números que
-                ninguém mediu, num site que ainda roda com catorze fotos de
-                demonstração. Trocados por afirmações que o próprio código
-                sustenta: a licença única de `lib/license.ts` e a política de
-                comissão do parágrafo ao lado. Quando houver número real
-                medido, ele volta. */}
             <div className={styles.numeros}>
               <div>
                 <b>Uma</b>

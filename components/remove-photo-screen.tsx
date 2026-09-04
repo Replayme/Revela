@@ -6,26 +6,6 @@ import { IconAlert, IconCheck } from './icons';
 import { formatCount, formatPrice } from '@/lib/format';
 import type { PhotographerPhoto } from '@/lib/photographer-panel';
 
-/**
- * Tirar uma foto do acervo — despublicar ou remover.
- *
- * **As duas moram na mesma tela de propósito.** Não são dois assuntos: são o
- * mesmo, com pesos diferentes, e o erro que essa tela existe para evitar é
- * remover querendo despublicar. Separá-las em duas telas esconderia justamente
- * a comparação que precisa ser feita — quem chega aqui já decidiu tirar a foto
- * da venda, e o que falta decidir é se isso tem volta.
- *
- * Por isso despublicar vem primeiro e leva o botão cheio: é a escolha certa na
- * dúvida, e desempata a favor do que se desfaz.
- *
- * **A licença já emitida não volta atrás em nenhuma das duas.** É a parte não
- * óbvia, e a que muda o que "remover" quer dizer aqui: remover tira a foto da
- * venda, não das mãos de quem comprou. Um fotógrafo que espera o contrário
- * precisa descobrir isso antes de clicar, não depois.
- *
- * Nada é gravado — falta `PATCH` e `DELETE` por id — e o aviso disso está na
- * entrada, como nas outras telas do painel.
- */
 export function RemovePhotoScreen({ photo }: { photo: PhotographerPhoto }) {
   const [feito, setFeito] = useState<'despublicar' | 'remover' | null>(null);
 
@@ -89,12 +69,6 @@ function AvisoDeEntrada() {
   );
 }
 
-/**
- * O que **não** muda — e é o que mais surpreende.
- *
- * Fica acima das duas opções porque vale para as duas, e porque quem lê isso
- * depois de escolher já escolheu com a informação errada.
- */
 function LicencasSeguem({ photo }: { photo: PhotographerPhoto }) {
   if (photo.sales === 0) {
     return (
@@ -105,12 +79,6 @@ function LicencasSeguem({ photo }: { photo: PhotographerPhoto }) {
     );
   }
 
-  /*
-    A oração inteira troca de número, e não pedaços dela costurados por
-    concatenação: foi montando "não altera as licença já emitida, que valem"
-    dessa segunda maneira que a tela de edição nasceu com a concordância
-    quebrada. Duas frases inteiras não têm como discordar entre si.
-  */
   const frase =
     photo.sales === 1
       ? `Uma pessoa já licenciou esta foto, por ${formatPrice(photo.revenue)}. Essa licença é perpétua e não se desfaz por aqui: quem comprou continua podendo usar o arquivo, sem prazo, em qualquer meio.`
@@ -132,13 +100,6 @@ function LicencasSeguem({ photo }: { photo: PhotographerPhoto }) {
   );
 }
 
-/**
- * Uma das duas saídas, com o que ela custa listado antes do botão.
- *
- * A confirmação é em dois toques, no lugar do `window.confirm`: o diálogo do
- * navegador não tem onde caber a pergunta com o nome da foto dentro, e é o
- * nome que faz alguém perceber que está na ficha errada.
- */
 function Opcao({
   titulo,
   resumo,
@@ -236,7 +197,6 @@ function Opcao({
   );
 }
 
-/** O que teria acontecido — e a lembrança de que não aconteceu. */
 function Resultado({
   acao,
   photo,

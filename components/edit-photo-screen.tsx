@@ -8,20 +8,6 @@ import { IconAlert, IconCheck } from './icons';
 import { formatFileSize, formatPrice } from '@/lib/format';
 import type { PhotographerPhoto } from '@/lib/photographer-panel';
 
-/**
- * A tela de editar a ficha de uma foto que já está no acervo.
- *
- * Irmã da de envio, e com a mesma honestidade na entrada: **salvar ainda não
- * tem para onde ir**, e isso é dito antes do trabalho. A diferença é o que
- * falta — aqui não é o lugar onde guardar o arquivo, que já existe, e sim
- * `PATCH /api/fotos/{id}`. O aviso diz qual dos dois, porque são prazos
- * diferentes.
- *
- * No fim ela mostra **o que mudaria**, e não a ficha inteira: numa edição o
- * que importa é a diferença. Uma lista com os cinco campos repetidos esconde,
- * no meio dos iguais, o único que foi mexido — e é justamente ele que a pessoa
- * quer conferir antes de salvar.
- */
 export function EditPhotoScreen({ photo }: { photo: PhotographerPhoto }) {
   const router = useRouter();
   const [mudancas, setMudancas] = useState<Mudanca[] | null>(null);
@@ -85,13 +71,6 @@ interface Mudanca {
   para: string;
 }
 
-/**
- * O que mudou entre a ficha do acervo e a que saiu do formulário.
- *
- * O arquivo entra na lista só quando é trocado: `file` vem `null` quando a
- * pessoa não mexeu nele, e é por isso que o formulário aceita edição sem
- * exigir um arquivo novo.
- */
 function compararComOriginal(
   photo: PhotographerPhoto,
   draft: PhotoDraft,
@@ -172,11 +151,6 @@ function Resultado({
                 {mudanca.campo}
               </dt>
               <dd className="grid min-w-0 gap-1">
-                {/*
-                  O valor antigo fica riscado e apagado, o novo em cheio. Só a
-                  seta não bastaria: quem não distingue as duas colunas de
-                  relance lê a mudança ao contrário.
-                */}
                 <span className="break-words text-paper-500 line-through decoration-paper/40">
                   {mudanca.de}
                 </span>

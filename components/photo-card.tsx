@@ -7,16 +7,9 @@ import { IconHeart, IconHeartFilled, IconStar } from './icons';
 import { formatPrice, formatRating } from '@/lib/format';
 import type { Photo } from '@/lib/mock-photos';
 
-/** Quatro colunas no desktop, uma no celular — o navegador escolhe o corte. */
 const SIZES =
   '(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw';
 
-/**
- * Foto do acervo dentro de um fotograma. O card inteiro é clicável pelo link
- * do título (pseudo-elemento esticado); favoritar e o nome do fotógrafo ficam
- * acima dele, então continuam sendo alvos próprios — três paradas de tabulação,
- * na ordem em que se lê o card.
- */
 export function PhotoCard({
   photo,
   frameNumber,
@@ -25,7 +18,6 @@ export function PhotoCard({
 }: {
   photo: Photo;
   frameNumber?: string;
-  /** Vem da lista de quem está logado, não do catálogo: favorito é de alguém. */
   isFavorited?: boolean;
   onToggleFavorite?: (id: string) => void;
 }) {
@@ -51,11 +43,6 @@ export function PhotoCard({
         </div>
 
         <div className="flex flex-1 flex-col px-4 py-4 sm:px-5">
-          {/*
-            O anel de foco sai no pseudo-elemento que cobre o card inteiro, não
-            em volta do título. O `!` em outline-none é necessário: a regra de
-            foco do globals.css está fora de @layer e vence qualquer utilitário.
-          */}
           <h3 className="font-serif text-lg leading-snug font-medium tracking-[-0.01em] text-prussia-900">
             <Link
               href={`/foto/${photo.id}`}
@@ -93,14 +80,6 @@ export function PhotoCard({
   );
 }
 
-/**
- * Sem `onToggle` o botão não aparece.
- *
- * Ele já esteve na tela sem quem o atendesse — anunciando `aria-pressed` a
- * leitor de tela e não mudando nada ao clique. Um controle que mente sobre o
- * próprio estado é pior que controle nenhum, então quem não passa o
- * manipulador não ganha o botão.
- */
 function FavoriteButton({
   photo,
   isFavorited,
@@ -133,10 +112,6 @@ function FavoriteButton({
   );
 }
 
-/**
- * Mesma moldura e mesma proporção do card, sem conteúdo. Manter as duas
- * estruturas iguais é o que evita o salto de layout quando os dados chegam.
- */
 export function PhotoCardSkeleton({ frameNumber }: { frameNumber?: string }) {
   return (
     <FilmFrame frameNumber={frameNumber} className="h-full">

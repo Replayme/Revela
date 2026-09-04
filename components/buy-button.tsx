@@ -8,11 +8,6 @@ import { formatPrice } from '@/lib/format';
 
 type Estado = 'idle' | 'loading' | 'owned' | 'error';
 
-/**
- * Comprar exige conta. Sem sessão o botão não finge que dá: leva ao login
- * carregando o caminho de volta, para a pessoa cair de novo nesta foto em vez
- * de num painel qualquer.
- */
 export function BuyButton({
   photoId,
   price,
@@ -22,7 +17,6 @@ export function BuyButton({
   photoId: string;
   price: number;
   isSignedIn: boolean;
-  /** Pedido já existente desta foto, quando a pessoa já a comprou. */
   orderId?: string | null;
 }) {
   const router = useRouter();
@@ -40,8 +34,6 @@ export function BuyButton({
         >
           Entrar para comprar
         </Link>
-        {/* Ícone e texto são os dois únicos filhos do flex: o link fica dentro
-            do parágrafo, senão vira uma terceira coluna e quebra sozinho. */}
         <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-paper-300">
           <IconLock width={13} height={13} className="mt-0.5 shrink-0" />
           <span>
@@ -70,8 +62,6 @@ export function BuyButton({
           Esta foto já é sua, para sempre. Comprar de novo não emite outra
           licença nem cobra outra vez.
         </p>
-        {/* O arquivo e o recibo ficam a um clique daqui: o fim da compra é
-            receber o que se comprou, não ver a confirmação. */}
         {orderId && (
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-signal-ok/25 pt-3.5">
             <a
@@ -138,7 +128,6 @@ export function BuyButton({
         </p>
       )}
 
-      {/* O pedido é registrado, mas não há cobrança no meio — ver docs/API.md. */}
       <p className="mt-3 text-xs leading-relaxed text-paper-500">
         Demonstração: o pedido é registrado com o preço e a versão da licença,
         mas ainda não há cobrança.

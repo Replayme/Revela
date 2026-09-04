@@ -13,22 +13,9 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Editar foto',
-  robots: { index: false, follow: false }, // tela de conta
+  robots: { index: false, follow: false },
 };
 
-/**
- * Editar a ficha de uma foto do acervo.
- *
- * **A foto de outro autor responde 404, não 403.** É a mesma regra do recibo em
- * `/pedido/{id}`, e pelo mesmo motivo: "existe, mas não é sua" já conta quantas
- * fotos o acervo tem e quais ids são válidos. Quem não é dono não descobre nem
- * isso. A conferência mora em `fotoDoAutor`, e não aqui, para esta tela e a de
- * remover não terem duas versões dela.
- *
- * Salvar ainda não existe — falta `PATCH /api/fotos/{id}` — e a tela diz isso
- * na entrada. O porquê de dizer antes e não depois está em
- * `components/new-photo-screen.tsx`.
- */
 export default async function EditarFotoPage({
   params,
 }: {
@@ -82,11 +69,6 @@ function Edicao({ photo }: { photo: PhotographerPhoto }) {
         >
           {photo.title}
         </Link>
-        {/*
-          A frase inteira troca de número, e não só o substantivo: com o artigo
-          e o verbo fixos no plural, uma venda só produzia "não altera as
-          licença já emitida, que valem".
-        */}
         {photo.sales > 0 &&
           (photo.sales === 1
             ? ' — mudar o preço não altera a licença já emitida, que vale pelo que foi pago'
@@ -96,11 +78,6 @@ function Edicao({ photo }: { photo: PhotographerPhoto }) {
 
       <EditPhotoScreen photo={photo} />
 
-      {/*
-        A saída para tirar do acervo fica no fim e discreta: quem chega aqui
-        veio editar, e uma ação sem volta ao lado do botão de salvar é como se
-        clica na errada com pressa.
-      */}
       <section className="mt-14 border-t border-paper/12 pt-7">
         <h2 className="font-mono text-[10px] tracking-[0.24em] text-paper-500 uppercase">
           Tirar do acervo

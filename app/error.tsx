@@ -6,18 +6,6 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { IconAlert } from '@/components/icons';
 
-/**
- * O boundary de erro do site — irmão do `not-found.tsx`.
- *
- * Sem ele, qualquer exceção em runtime caía na tela padrão do Next: branca,
- * fonte do sistema, sem header e sem saída.
- *
- * **A mensagem do erro não vai para a tela.** `error.message` de um componente
- * de servidor carrega caminho de arquivo e detalhe de implementação; quem
- * precisa disso é o log, não quem está tentando comprar uma foto. Em produção
- * o Next já substitui a mensagem por um texto genérico, mas o `digest` continua
- * indo junto — então o cuidado é aqui, não na confiança de que ele filtre.
- */
 export default function Error({
   error,
   reset,
@@ -26,9 +14,6 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Em produção isto vira o cliente de observabilidade (Sentry e afins). O
-    // `digest` é o que liga esta tela à entrada correspondente no log do
-    // servidor.
     console.error('Erro não tratado:', error);
   }, [error]);
 

@@ -14,23 +14,9 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Tirar do acervo',
-  robots: { index: false, follow: false }, // tela de conta
+  robots: { index: false, follow: false },
 };
 
-/**
- * Tirar uma foto do acervo — despublicar ou remover, na mesma tela.
- *
- * O porquê de as duas ficarem juntas está em `components/remove-photo-screen.tsx`:
- * o erro que esta tela existe para evitar é remover querendo despublicar, e
- * esse erro só se evita comparando as duas lado a lado.
- *
- * **A foto aparece.** Numa ação que não tem volta, ver a imagem é o que
- * denuncia estar na ficha errada antes do clique — o título sozinho não
- * denuncia, porque títulos parecidos são a regra num acervo de um autor só.
- *
- * Foto de outro autor responde 404, não 403, pelo mesmo motivo do recibo em
- * `/pedido/{id}`.
- */
 export default async function RemoverFotoPage({
   params,
 }: {

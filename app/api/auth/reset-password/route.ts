@@ -5,7 +5,6 @@ import { validatePassword } from '@/lib/validation';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** POST /api/auth/reset-password — MOCK. Token de uso único, validade de 24h. */
 export async function POST(request: Request) {
   let body: { token?: unknown; password?: unknown; confirmation?: unknown };
   try {
@@ -35,7 +34,5 @@ export async function POST(request: Request) {
 
   updatePassword(check.userId, password);
 
-  // Em produção: invalidar todas as sessões ativas do usuário aqui e avisar
-  // por e-mail que a senha mudou.
   return NextResponse.json({ ok: true });
 }

@@ -4,19 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from './session-provider';
 
-/**
- * Os favoritos de quem está logado, para as grades de foto.
- *
- * O coração só quer dizer alguma coisa se for a lista de alguém, então a
- * origem da verdade é o servidor (`/api/favoritos`) e não o catálogo. Quem não
- * entrou não tem lista: clicar leva ao login carregando o caminho de volta,
- * como já faz o botão de comprar — em vez de guardar um estado que se perde no
- * reload e faz a pessoa achar que salvou.
- *
- * A troca é otimista: o coração vira na hora e volta atrás se o servidor
- * recusar. Esperar a resposta para pintar um coração é lento a ponto de a
- * pessoa clicar duas vezes.
- */
 export function useFavorites() {
   const session = useSession();
   const router = useRouter();
@@ -26,8 +13,6 @@ export function useFavorites() {
   );
 
   useEffect(() => {
-    // Deslogado não tem lista para buscar, e trocar de conta não pode herdar a
-    // lista da anterior — daí o estado zerar junto.
     if (!session) {
       setFavorites(new Set());
       return;
@@ -40,7 +25,6 @@ export function useFavorites() {
         if (!cancelado && data?.photoIds) setFavorites(new Set(data.photoIds));
       })
       .catch(() => {
-        /* sem favoritos na tela é melhor que a grade não carregar */
       });
 
     return () => {

@@ -16,19 +16,10 @@ import { isValidEmail, validatePassword } from '@/lib/validation';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * POST /api/auth/login — implementação MOCK do contrato em docs/API.md.
- *
- * Se `REVEAL_ACCOUNT_EXISTENCE` for "false", o endpoint responde
- * INVALID_CREDENTIALS tanto para e-mail inexistente quanto para senha errada.
- * Mensagens distintas ("E-mail não encontrado" / "Senha incorreta") são melhores
- * de usar, mas permitem que alguém descubra quais e-mails têm conta no site.
- * Ver a seção "Enumeração de contas" em docs/API.md antes de decidir.
- */
 const REVEAL_ACCOUNT_EXISTENCE =
   process.env.REVEAL_ACCOUNT_EXISTENCE !== 'false';
 
-const FAKE_LATENCY_MS = 600; // só para a demo: torna o loading state visível
+const FAKE_LATENCY_MS = 600;
 
 export async function POST(request: Request) {
   const ip = clientIp(request.headers);
@@ -44,7 +35,6 @@ export async function POST(request: Request) {
   const password = typeof body.password === 'string' ? body.password : '';
   const remember = body.remember === true;
 
-  // O servidor revalida tudo: validação de cliente é UX, não segurança.
   if (!isValidEmail(email) || validatePassword(password)) {
     return NextResponse.json(
       {
@@ -58,7 +48,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1. Limites ANTES de tocar na senha.
   const limits = checkLimits(ip, email);
   if (limits.blocked) {
     return NextResponse.json(
@@ -120,14 +109,11 @@ export async function POST(request: Request) {
     redirectTo: '/dashboard',
   });
 
-  // O token vai em cookie HttpOnly: JavaScript da página não consegue lê-lo,
-  // o que fecha a porta para roubo de sessão via XSS.
   response.cookies.set('revela_session', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    // "Lembrar-me" define a duração: 30 dias com, 12 horas sem.
     maxAge: remember ? sessionMaxAgeSeconds(true) : undefined,
   });
 

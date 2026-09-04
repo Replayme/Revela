@@ -4,8 +4,6 @@ import {
 } from './photographer-card';
 import type { Photographer } from '@/lib/mock-photographers';
 
-// Mesmo gap do PhotoGrid e do CategoryGrid: as seções da home batem o ritmo.
-// Seis fotógrafos fecham duas linhas de três no desktop.
 const GRID = 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3';
 
 export function PhotographerGrid({
@@ -19,7 +17,6 @@ export function PhotographerGrid({
 }) {
   return (
     <div>
-      {/* Casa com o `.titulo` das outras seções da home (Fraunces, 2rem). */}
       <h2 className="font-serif text-[2rem] leading-tight font-normal tracking-[-0.01em] text-prussia-900">
         Fotógrafos em destaque
       </h2>

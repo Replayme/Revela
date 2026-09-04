@@ -1,9 +1,3 @@
-/* ------------------------------------------------------------------ */
-/*  Home do Revela — adaptado do mockup revela.html.                   */
-/*  Cores reaproveitam os tokens de app/globals.css (@theme): a home    */
-/*  usa o papel como superfície inteira, não só como cartão de leitura. */
-/* ------------------------------------------------------------------ */
-
 .pagina {
   --papel: var(--color-paper);
   --papel-2: #dde0da;
@@ -21,10 +15,6 @@
   font-family: var(--sans);
 }
 
-/* Os links herdam a cor pelo preflight do Tailwind (`@layer base`), que é o
-   lugar certo: repetir a regra aqui, fora de camada, faria ela vencer qualquer
-   utilitário de cor aplicado a um link dentro da home. */
-
 .grao {
   position: fixed;
   inset: 0;
@@ -40,16 +30,10 @@
   padding: 0 24px;
 }
 
-/*
-  Altura das duas faixas do header (busca + navegação). Serve de
-  `scroll-margin-top` das seções com âncora: sem ela, "Categorias" e "Sobre"
-  levam o título para debaixo do header grudado no topo.
-*/
 .pagina {
   --altura-header: 142px;
 }
 
-/* ---------- HEADER ---------- */
 .cabecalho {
   position: sticky;
   top: 0;
@@ -191,12 +175,10 @@
   outline-offset: 3px;
 }
 
-/* Especificidade de duas classes: precisa vencer `.navegacao a` (classe + tag). */
 .navegacao .ctaMovel {
   display: none;
 }
 
-/* O "Entrar" do menu só existe onde o header o esconde (abaixo de 980px). */
 .entrarMovel {
   display: none;
 }
@@ -240,7 +222,6 @@
   display: none;
 }
 
-/* ---------- HERO ---------- */
 .abertura {
   padding: 74px 0 60px;
   border-bottom: 1px solid var(--linha);
@@ -286,7 +267,6 @@
   border-color: var(--tinta);
 }
 
-/* ---------- FILME ---------- */
 .filme {
   margin-top: 52px;
   display: flex;
@@ -358,7 +338,6 @@
   display: block;
 }
 
-/* ---------- SEÇÕES ---------- */
 .bloco {
   padding: 64px 0;
   border-bottom: 1px solid var(--linha);
@@ -494,7 +473,6 @@
   font-size: 14px;
 }
 
-/* ---------- RODAPÉ ---------- */
 .footer {
   padding: 52px 0 60px;
   font-size: 14px;
@@ -537,7 +515,6 @@
   color: var(--tinta-2);
 }
 
-/* ---------- RESPONSIVO ---------- */
 @media (max-width: 980px) {
   .entrarMovel {
     display: list-item;
