@@ -50,3 +50,15 @@ export function formatDateLong(value: number | Date): string {
 export function formatDate(value: number | Date): string {
   return dateShort.format(value);
 }
+
+/**
+ * "3,4 MB", "820 kB" — o peso de um arquivo escolhido para envio.
+ *
+ * Abaixo de um mega o valor sai em kB: um PNG bem comprimido apareceria como
+ * "0,0 MB", e um campo que informa zero ao lado de um arquivo que existe faz
+ * duvidar se ele chegou.
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} kB`;
+  return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
+}

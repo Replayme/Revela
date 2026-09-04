@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { PhotographerStats } from '@/components/photographer-stats';
 import { PhotographerPhotoCard } from '@/components/photographer-photo-card';
+import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft, IconImage, IconUpload } from '@/components/icons';
 import { painelDoAutor } from '@/lib/mock-photographer-panel';
 import { summarize } from '@/lib/photographer-panel';
@@ -59,7 +60,12 @@ export default async function MinhasFotosPage() {
           {painel ? (
             <Painel painel={painel} />
           ) : (
-            <ContaSemAutor />
+            <>
+              <p className="mt-3 max-w-[56ch] text-paper-300">
+                Esta conta ainda não publica no acervo.
+              </p>
+              <NotAnAuthor />
+            </>
           )}
         </div>
       </main>
@@ -98,9 +104,18 @@ function Painel({ painel }: { painel: NonNullable<ReturnType<typeof painelDoAuto
       </div>
 
       <section className="mt-12 border-t-2 border-paper/15 pt-8">
-        <h2 className="font-serif text-2xl leading-tight font-medium text-paper">
-          No acervo
-        </h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3">
+          <h2 className="font-serif text-2xl leading-tight font-medium text-paper">
+            No acervo
+          </h2>
+          <Link
+            href="/dashboard/nova-foto"
+            className="flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:text-amber-light"
+          >
+            <IconUpload width={14} height={14} />
+            Enviar foto
+          </Link>
+        </div>
 
         {photos.length === 0 ? (
           <AcervoVazio />
@@ -122,40 +137,6 @@ function Painel({ painel }: { painel: NonNullable<ReturnType<typeof painelDoAuto
       </section>
 
       <PorVir />
-    </>
-  );
-}
-
-/**
- * A conta existe e não é de um autor.
- *
- * Não é erro nem falta de permissão: é quem entrou para comprar e chegou aqui.
- * A saída é o cadastro de fotógrafo, que já existe.
- */
-function ContaSemAutor() {
-  return (
-    <>
-      <p className="mt-3 max-w-[56ch] text-paper-300">
-        Esta conta ainda não publica no acervo.
-      </p>
-
-      <div className="mt-9 border border-dashed border-paper/20 px-6 py-14 text-center">
-        <IconUpload width={26} height={26} className="mx-auto text-paper-500" />
-        <p className="mt-4 font-serif text-xl leading-snug font-medium text-paper">
-          Você ainda não é um autor no Revela
-        </p>
-        <p className="mx-auto mt-3 max-w-[48ch] text-sm leading-relaxed text-paper-300">
-          Quem publica aqui vende a mesma licença que compra: uso ilimitado,
-          para sempre, sem prazo e sem comissão. O preço de cada arquivo é de
-          quem o fez.
-        </p>
-        <Link
-          href="/cadastro-fotografo"
-          className="mt-7 inline-block bg-amber px-6 py-3.5 text-sm font-bold tracking-[0.14em] text-prussia-950 uppercase transition-[background-color] hover:bg-amber-light"
-        >
-          Cadastrar como fotógrafo
-        </Link>
-      </div>
     </>
   );
 }
@@ -189,10 +170,17 @@ function PorVir() {
         Ainda não é possível
       </h2>
       <p className="mt-3 max-w-[60ch] leading-relaxed text-paper-300">
-        Enviar foto nova, editar a ficha de uma publicada, despublicar ou
-        remover. As três primeiras dependem de{' '}
-        <code className="font-mono text-paper-400">POST /api/fotos</code> e do
-        lugar onde o arquivo vai ser guardado; a última, de decidir o que
+        Publicar de fato, editar a ficha de uma foto já no acervo, despublicar
+        ou remover. A tela de{' '}
+        <Link
+          href="/dashboard/nova-foto"
+          className="underline decoration-paper/30 decoration-2 underline-offset-4 transition-colors hover:text-paper hover:decoration-amber"
+        >
+          enviar foto
+        </Link>{' '}
+        já existe e confere o arquivo inteiro, mas para no último passo: falta{' '}
+        <code className="font-mono text-paper-400">POST /api/fotos</code> e o
+        lugar onde guardar o arquivo. Remover depende ainda de decidir o que
         acontece com as licenças já emitidas — elas continuam valendo, e é isso
         que torna remover diferente de apagar.
       </p>

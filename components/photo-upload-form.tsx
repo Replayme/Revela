@@ -12,7 +12,7 @@ import Image from 'next/image';
 import { Alert, SubmitButton, TextField } from './form';
 import { IconImage, IconUpload } from './icons';
 import { mockCategories } from '@/lib/mock-categories';
-import { formatPrice } from '@/lib/format';
+import { formatFileSize, formatPrice } from '@/lib/format';
 
 /**
  * O formulário de publicar uma foto.
@@ -424,7 +424,7 @@ function FileField({
                 height={12}
                 className="mr-1.5 inline align-[-1px]"
               />
-              {selecao.width}×{selecao.height} · {formatarTamanho(selecao.file.size)}
+              {selecao.width}×{selecao.height} · {formatFileSize(selecao.file.size)}
             </>
           ) : isEdicao ? (
             'Deixe como está para manter o arquivo atual.'
@@ -434,18 +434,6 @@ function FileField({
       </p>
     </div>
   );
-}
-
-/**
- * "3,4 MB", "820 kB".
- *
- * Abaixo de um mega o valor sai em kB: um PNG bem comprimido apareceria como
- * "0,0 MB", e um campo que informa zero ao lado de um arquivo que existe faz
- * duvidar se ele chegou.
- */
-function formatarTamanho(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} kB`;
-  return `${(bytes / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
 }
 
 /** Largura e altura reais do arquivo, ou `null` se o navegador não o abrir. */
