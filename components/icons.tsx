@@ -144,7 +144,6 @@ export function IconHeart(props: IconProps) {
   );
 }
 
-/** Coração preenchido: estado ativo do favoritar. */
 export function IconHeartFilled(props: IconProps) {
   return (
     <svg {...base} fill="currentColor" {...props}>
@@ -153,7 +152,6 @@ export function IconHeartFilled(props: IconProps) {
   );
 }
 
-/** Estrela da avaliação — dado, não ação: nunca em âmbar. */
 export function IconStar(props: IconProps) {
   return (
     <svg {...base} fill="currentColor" stroke="none" {...props}>
@@ -162,7 +160,6 @@ export function IconStar(props: IconProps) {
   );
 }
 
-/** Fotograma vazio: ilustra o estado sem resultados. */
 export function IconImage(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -173,7 +170,6 @@ export function IconImage(props: IconProps) {
   );
 }
 
-/** Marca do Revela: quadro de exposição com sol de cianotipia. */
 export function BrandMark(props: IconProps) {
   return (
     <svg
@@ -208,7 +204,6 @@ export function BrandMark(props: IconProps) {
   );
 }
 
-/** Seta para a bandeja: o download do arquivo comprado. */
 export function IconDownload(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -219,7 +214,6 @@ export function IconDownload(props: IconProps) {
   );
 }
 
-/** A mesma seta do download, virada: o envio do arquivo para o acervo. */
 export function IconUpload(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -230,7 +224,6 @@ export function IconUpload(props: IconProps) {
   );
 }
 
-/** Lápis: editar a ficha da foto já publicada. */
 export function IconPencil(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -240,7 +233,6 @@ export function IconPencil(props: IconProps) {
   );
 }
 
-/** Lixeira: tirar a foto do acervo. */
 export function IconTrash(props: IconProps) {
   return (
     <svg {...base} {...props}>
@@ -253,7 +245,6 @@ export function IconTrash(props: IconProps) {
   );
 }
 
-/** Etiqueta de preço: o valor do arquivo na ficha do painel. */
 export function IconTag(props: IconProps) {
   return (
     <svg {...base} {...props}>

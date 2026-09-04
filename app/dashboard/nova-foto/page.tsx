@@ -12,24 +12,9 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Enviar foto',
-  robots: { index: false, follow: false }, // tela de conta
+  robots: { index: false, follow: false },
 };
 
-/**
- * A tela de enviar uma foto para o acervo.
- *
- * **Ela ainda não publica**, e diz isso na entrada — o formulário confere tudo
- * e mostra a ficha que sairia, sem gravar nada. O porquê está em
- * `components/new-photo-screen.tsx`: sem lugar para guardar o arquivo, uma foto
- * dita publicada apareceria no acervo com a imagem de outra pessoa.
- *
- * A tela existe assim mesmo porque a conferência é a parte que dá para provar
- * hoje: tipo do arquivo, peso, medida mínima, título e preço. O que falta é o
- * último salto, e ele é de uma função só.
- *
- * Quem não é autor não vê o formulário: vê o caminho para o cadastro. Não é
- * permissão negada — é que não há para onde a foto ir sem uma assinatura.
- */
 export default async function NovaFotoPage() {
   const session = await currentSession();
   if (!session) {

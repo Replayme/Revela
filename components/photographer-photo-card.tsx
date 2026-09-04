@@ -11,21 +11,6 @@ import {
   type PhotographerPhoto,
 } from '@/lib/photographer-panel';
 
-/**
- * A foto vista pelo autor — a outra face do `PhotoCard`.
- *
- * O card do acervo é uma vitrine: fotograma, preço, favoritar. Este é uma
- * ficha de trabalho, e por isso é uma linha e não um quadro — quem administra
- * trinta fotos precisa varrer a lista, não admirar cada uma. Mesma proporção e
- * mesmo espaçamento da lista de licenças do `/dashboard`, para as duas telas
- * do painel se lerem como uma só.
- *
- * **Cada ação só aparece se alguém a atende.** É a regra que o botão de
- * favoritar já segue no card do acervo: um controle que anuncia estado e não
- * muda nada ao clique é pior que controle nenhum. Enquanto não houver
- * `PATCH /api/fotos/{id}`, esta lista abre sem os botões — e a tela continua
- * verdadeira.
- */
 export function PhotographerPhotoCard({
   photo,
   editHref,
@@ -34,11 +19,9 @@ export function PhotographerPhotoCard({
   busy = false,
 }: {
   photo: PhotographerPhoto;
-  /** Sem endereço de edição, o lápis não entra. */
   editHref?: string;
   onToggleStatus?: (id: string) => void;
   onDelete?: (id: string) => void;
-  /** Trava as ações enquanto a alteração anterior não voltou do servidor. */
   busy?: boolean;
 }) {
   return (
@@ -56,11 +39,6 @@ export function PhotographerPhotoCard({
       <div className="flex min-w-0 flex-col">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <h3 className="font-serif text-lg leading-snug font-medium text-paper">
-            {/*
-              O título leva ao acervo só quando a foto está lá. Rascunho não tem
-              página pública: o link daria 404 no próprio painel de quem
-              escreveu a foto.
-            */}
             {photo.status === 'publicada' ? (
               <Link
                 href={`/foto/${photo.id}`}
@@ -104,11 +82,6 @@ export function PhotographerPhotoCard({
           )}
         </p>
 
-        {/*
-          A régua de baixo só entra se houver o que pôr nela. Enquanto as
-          rotas do painel não existem, nenhuma ação é passada — e uma linha
-          divisória sobre o vazio anuncia um rodapé que não há.
-        */}
         {(photo.updatedAt || editHref || onToggleStatus || onDelete) && (
         <div className="mt-3.5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-paper/10 pt-3">
           {photo.updatedAt && (
@@ -158,17 +131,6 @@ function StatusBadge({ status }: { status: PhotographerPhoto['status'] }) {
   );
 }
 
-/**
- * Remover em dois toques, sem `window.confirm`.
- *
- * O diálogo nativo interrompe a página inteira e não tem a voz do site — mas o
- * motivo de ele não servir aqui é outro: apagar uma foto que já vendeu não
- * apaga as licenças emitidas, e essa frase precisa caber na pergunta. No
- * diálogo do navegador, não cabe.
- *
- * O foco vai para o botão de confirmar quando a pergunta aparece, senão quem
- * navega por teclado continua no botão que acabou de sumir.
- */
 function DeleteAction({
   photo,
   onDelete,
@@ -225,10 +187,6 @@ function DeleteAction({
   );
 }
 
-/**
- * Mesma estrutura da ficha, sem conteúdo — é o que evita o salto de layout
- * quando a lista chega.
- */
 export function PhotographerPhotoCardSkeleton() {
   return (
     <div

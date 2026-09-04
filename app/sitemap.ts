@@ -4,17 +4,6 @@ import { mockPhotographers } from '@/lib/mock-photographers';
 import { mockCategories } from '@/lib/mock-categories';
 import { siteUrl } from '@/lib/site';
 
-/**
- * O mapa do site para os buscadores.
- *
- * Gerado das mesmas fontes que as páginas usam, e não de uma lista à mão: uma
- * lista paralela envelhece calada — some uma foto do acervo e o sitemap segue
- * anunciando a URL por meses.
- *
- * As telas de conta não entram (já são `noindex` por página, e o `robots.ts`
- * também as bloqueia). Quando o acervo vier do banco, isto vira uma consulta;
- * acima de 50 mil URLs o Next quer o sitemap dividido em vários.
- */
 export default function sitemap(): MetadataRoute.Sitemap {
   const url = (caminho: string) => `${siteUrl()}${caminho}`;
 

@@ -8,11 +8,6 @@ export const metadata = {
   title: 'A licença',
 };
 
-/**
- * O texto integral da licença. É para onde apontam o card da foto, o aceite
- * do cadastro e o recibo do pedido — quem lê aqui precisa entender sem
- * precisar de advogado do lado.
- */
 export default function LicensePage() {
   const license = UNIVERSAL_LICENSE;
 

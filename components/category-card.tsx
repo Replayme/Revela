@@ -4,27 +4,15 @@ import { FilmFrame } from './film-frame';
 import { formatCount } from '@/lib/format';
 import type { Category } from '@/lib/mock-categories';
 
-/** Quatro colunas no desktop, duas no celular. */
 const SIZES =
   '(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 45vw';
 
-/**
- * Categoria do acervo num fotograma sem marcação de borda: o selo
- * "REVELA 400 ▸ 12A" identifica a foto no `PhotoCard`, e repeti-lo aqui
- * esvaziaria o sinal. Card inteiro clicável, uma parada de tabulação.
- */
 export function CategoryCard({ category }: { category: Category }) {
   return (
     <FilmFrame
       markings={false}
       className="h-full transition hover:ring-1 hover:ring-amber/60"
     >
-      {/*
-        O link fica estático (sem `relative`) de propósito: assim o
-        pseudo-elemento esticado se resolve contra a moldura, cobrindo o card
-        inteiro — área clicável e anel de foco. O `!` em outline-none é
-        necessário porque a regra de foco do globals.css está fora de @layer.
-      */}
       <Link
         href={`/explorar?categoria=${category.slug}`}
         className="block after:absolute after:inset-0 focus-visible:outline-none! focus-visible:after:[outline:2px_solid_var(--color-amber)] focus-visible:after:[outline-offset:2px]"
@@ -38,13 +26,6 @@ export function CategoryCard({ category }: { category: Category }) {
             className="object-cover"
           />
 
-          {/*
-            Véu leve na foto inteira e degradê só no rodapé, onde o texto se
-            apoia. Um véu chapado forte o bastante para garantir contraste
-            apagaria a foto; o degradê concentra o escuro onde ele é preciso.
-            No pior caso — foto estourada de branco — o texto em papel sai em
-            5,7:1 sobre o degradê, acima do mínimo AA.
-          */}
           <div aria-hidden className="absolute inset-0 bg-prussia-950/25" />
           <div
             aria-hidden
@@ -65,7 +46,6 @@ export function CategoryCard({ category }: { category: Category }) {
   );
 }
 
-/** Mesma moldura e mesma proporção do card, sem conteúdo. */
 export function CategoryCardSkeleton() {
   return (
     <FilmFrame markings={false} className="h-full">

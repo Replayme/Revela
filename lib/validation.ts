@@ -1,17 +1,9 @@
 import type { MessageKey } from './i18n';
 
-/**
- * Regras de validação compartilhadas entre cliente e servidor.
- * O cliente valida para dar feedback imediato; o servidor revalida sempre,
- * porque validação de cliente é UX, não segurança.
- */
-
 export const PASSWORD_MIN_LENGTH = 6;
 export const NAME_MIN_LENGTH = 2;
 export const NAME_MAX_LENGTH = 80;
 
-// Pragmático e alinhado ao que os navegadores aceitam em input[type=email].
-// Validação definitiva de e-mail é sempre a confirmação por link.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
 export function isValidEmail(value: string): boolean {
@@ -25,10 +17,6 @@ export function validateEmail(value: string): MessageKey | null {
   return null;
 }
 
-/**
- * Nome público do fotógrafo — é o que assina a foto no acervo.
- * Só exige que exista e caiba no campo: nome de pessoa não tem formato.
- */
 export function validateName(value: string): MessageKey | null {
   const name = value.trim();
   if (!name) return 'validation.nameRequired';
@@ -55,7 +43,6 @@ export function validateConfirmation(
 export type StrengthLevel = 0 | 1 | 2 | 3;
 
 export interface PasswordStrength {
-  /** 0 = vazia/curta, 1 = fraca, 2 = média, 3 = forte */
   level: StrengthLevel;
   labelKey: MessageKey;
   hasLetters: boolean;

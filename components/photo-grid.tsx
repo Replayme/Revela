@@ -4,17 +4,11 @@ import { PhotoCard, PhotoCardSkeleton } from './photo-card';
 import { IconImage } from './icons';
 import type { Photo } from '@/lib/mock-photos';
 
-/**
- * `wide` para a grade em largura total (a home). `compact` para quando há uma
- * coluna de filtros ao lado: com quatro colunas dentro do espaço que sobra, o
- * fotograma fica estreito demais e o título quebra em quatro linhas.
- */
 const GRIDS = {
   wide: 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
   compact: 'grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3',
 } as const;
 
-/** Marcação de borda do negativo: 01A, 02A, 03A… */
 function frameNumber(index: number): string {
   return `${String(index + 1).padStart(2, '0')}A`;
 }
@@ -32,14 +26,8 @@ export function PhotoGrid({
   loading?: boolean;
   skeletonCount?: number;
   onToggleFavorite?: (id: string) => void;
-  /** Ids favoritados por quem está logado — vem do `useFavorites`. */
   favorites?: ReadonlySet<string>;
   layout?: keyof typeof GRIDS;
-  /**
-   * Fundo em que a grade está. Só muda o estado vazio: o card é um fotograma
-   * de papel e funciona nos dois, mas o texto do vazio some se a cor não
-   * acompanhar o fundo — azul sobre azul na busca, papel sobre papel na home.
-   */
   tone?: 'paper' | 'dark';
 }) {
   const grid = GRIDS[layout];
@@ -64,8 +52,6 @@ export function PhotoGrid({
         <li
           key={photo.id}
           className="anim-reveal"
-          // Escalonar a entrada até a oitava foto: passando disso o atraso
-          // acumulado começa a parecer travamento, não revelação.
           style={{ animationDelay: `${Math.min(index, 7) * 45}ms` }}
         >
           <PhotoCard
