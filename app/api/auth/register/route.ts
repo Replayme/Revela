@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { checkLimits, clientIp, registerFailure } from '@/lib/rate-limit';
-import {
-  createUser,
-  issueSessionToken,
-  sessionMaxAgeSeconds,
-} from '@/lib/mock-db';
+import { createUser } from '@/lib/repository';
+import { issueSessionToken, sessionMaxAgeSeconds } from '@/lib/tokens';
 import {
   isValidEmail,
   validateConfirmation,
@@ -89,7 +86,7 @@ export async function POST(request: Request) {
 
   await new Promise((resolve) => setTimeout(resolve, FAKE_LATENCY_MS));
 
-  const created = createUser({ name, email, password });
+  const created = await createUser({ name, email, password });
 
   if (!created.ok) {
     if (!REVEAL_ACCOUNT_EXISTENCE) {

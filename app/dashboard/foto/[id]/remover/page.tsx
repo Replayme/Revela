@@ -43,8 +43,9 @@ export default async function RemoverFotoPage({
     redirect(`/login?next=${encodeURIComponent(`/dashboard/foto/${id}/remover`)}`);
   }
 
-  const ehAutor = painelDoAutor(session.email) !== null;
-  const photo = ehAutor ? fotoDoAutor(session.email, id) : undefined;
+  const painel = await painelDoAutor(session.email);
+  const ehAutor = painel !== null;
+  const photo = fotoDoAutor(painel, id);
   if (ehAutor && !photo) notFound();
 
   return (

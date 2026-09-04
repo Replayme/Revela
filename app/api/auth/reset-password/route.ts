@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { consumeResetToken, updatePassword } from '@/lib/mock-db';
+import { consumeResetToken, updatePassword } from '@/lib/repository';
 import { validatePassword } from '@/lib/validation';
 
 export const runtime = 'nodejs';
@@ -28,12 +28,12 @@ export async function POST(request: Request) {
 
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const check = consumeResetToken(token);
+  const check = await consumeResetToken(token);
   if (!check.ok) {
     return NextResponse.json({ error: check.reason }, { status: 400 });
   }
 
-  updatePassword(check.userId, password);
+  await updatePassword(check.userId, password);
 
   // Em produção: invalidar todas as sessões ativas do usuário aqui e avisar
   // por e-mail que a senha mudou.

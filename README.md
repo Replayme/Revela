@@ -129,17 +129,21 @@ traduzido.
 
 | Item                          | Onde                                  |
 | ----------------------------- | ------------------------------------- |
-| Senha com hash + salt         | `lib/mock-db.ts` (scrypt)             |
-| Comparação em tempo constante | `lib/mock-db.ts`                      |
+| Senha com hash + salt         | `lib/password.ts` (scrypt)            |
+| Comparação em tempo constante | `lib/password.ts`                     |
 | Rate limit 5 / 15 min         | `lib/rate-limit.ts`                   |
 | Bloqueio de IP por força bruta| `lib/rate-limit.ts` (15 falhas → 30 min) |
 | Sessão em cookie `HttpOnly`   | `app/api/auth/login/route.ts`         |
-| Token de reset com hash, 24 h, uso único | `lib/mock-db.ts`           |
+| Token de reset com hash, 24 h, uso único | `lib/tokens.ts` + `dbo.password_reset_tokens` |
 | HSTS e cabeçalhos de segurança| `next.config.mjs`                     |
 | `method="post"` nos formulários | evita a senha ir parar na URL se o JS ainda não hidratou |
 
-**O mock é mock.** Rate limit em memória não sobrevive a duas instâncias, e o
-"banco" some a cada restart. `docs/API.md` §8 e §11 dizem o que trocar.
+**Rate limit em memória continua sendo mock**: não sobrevive a duas
+instâncias, e na Vercel são muitas. `docs/API.md` §8 diz o que trocar.
+
+O armazenamento já não é: com as variáveis `SQLSERVER_*` definidas, os dados
+vão para o SQL Server (`docs/BANCO.md`). Sem elas, o site cai na memória do
+processo — bom para desenvolver, inútil em produção.
 
 ---
 
@@ -168,11 +172,40 @@ acima.
 ```bash
 AUTH_SECRET=                    # obrigatório em produção: chave de assinatura da sessão
 REVEAL_ACCOUNT_EXISTENCE=true   # false = "E-mail ou senha incorretos" nos dois casos
+
+# As quatro juntas ligam o SQL Server. Faltando qualquer uma, o site usa a
+# memória do processo. Ver docs/BANCO.md e .env.example.
+SQLSERVER_HOST=
+SQLSERVER_DATABASE=
+SQLSERVER_USER=
+SQLSERVER_PASSWORD=
 ```
 
 Sobre `REVEAL_ACCOUNT_EXISTENCE`: mensagens distintas são melhores de usar e
 foi assim que a tela foi pedida, mas permitem descobrir quais e-mails têm
 conta no site. `docs/API.md` §7 explica quando vale a pena mudar.
+
+---
+
+## Banco de dados
+
+O armazenamento é SQL Server. Preencha as quatro variáveis acima e aplique o
+esquema:
+
+```bash
+npm run db:migrate            # tabelas, índices e restrições
+npm run db:migrate -- --seed  # + contas de demonstração (nunca em produção)
+```
+
+Sem essas variáveis o site usa um armazenamento em memória, que some a cada
+restart — serve para desenvolver, não para publicar.
+
+**`docs/BANCO.md`** responde a pergunta que sempre aparece aqui — como um site
+na Vercel fala com um SQL Server, já que a Vercel "não suporta" SQL Server (ela
+suporta: roda Node, e o driver é JavaScript puro; o que não funciona é o runtime
+de edge). O documento tem as três topologias possíveis, o problema do IP de
+saída que não é fixo, o dimensionamento do pool em serverless e o passo a passo
+do Azure SQL.
 
 ---
 
@@ -209,7 +242,18 @@ lib/
   rate-limit.ts       limites e bloqueio
   session.ts          leitura do cookie de sessão, num lugar só
   license.ts          o texto da licença e o histórico de versões
-  mock-db.ts          usuários, hashes, tokens, sessão, pedidos
+  password.ts         hash de senha (scrypt) e comparação em tempo constante
+  tokens.ts           token de sessão e token de reset, assinados
+  model.ts            o modelo de dados e o contrato de armazenamento
+  repository.ts       a porta única dos dados — escolhe banco ou memória
+  db.ts               pool do SQL Server, consultas parametrizadas
+  store-sqlserver.ts  o armazenamento em SQL Server
+  store-memory.ts     o armazenamento em memória, para desenvolver
   i18n.ts             pt / en
+db/
+  001_schema.sql      tabelas, índices e restrições
+  002_seed_demo.sql   contas de demonstração (nunca em produção)
+scripts/migrate.mjs   aplicador de migrações — `npm run db:migrate`
 docs/API.md           contrato do back-end
+docs/BANCO.md         SQL Server na Vercel: como e por quê
 ```

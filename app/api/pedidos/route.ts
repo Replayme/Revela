@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createOrder, findOrder } from '@/lib/mock-db';
+import { createOrder, findOrder } from '@/lib/repository';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 import { findPhoto } from '@/lib/mock-photos';
 import { currentSession } from '@/lib/session';
@@ -40,17 +40,24 @@ export async function POST(request: Request) {
 
   // A licença é perpétua: comprar de novo a mesma foto não emite outra nem
   // cobra de novo — devolve a que já existe.
-  const existing = findOrder(session.sub, photo.id);
+  const existing = await findOrder(session.sub, photo.id);
   if (existing) {
     return NextResponse.json({ order: existing, alreadyOwned: true });
   }
 
-  const order = createOrder({
+  // `created: false` quer dizer que outra requisição da mesma pessoa emitiu a
+  // licença entre a consulta acima e esta linha — o índice único de
+  // (usuário, foto) decidiu qual das duas vale. Sem este ramo, a segunda
+  // responderia 201 para um pedido que ela não criou.
+  const { order, created } = await createOrder({
     userId: session.sub,
     photoId: photo.id,
     pricePaid: photo.price,
     licenseVersion: UNIVERSAL_LICENSE.version,
   });
 
-  return NextResponse.json({ order, alreadyOwned: false }, { status: 201 });
+  return NextResponse.json(
+    { order, alreadyOwned: !created },
+    { status: created ? 201 : 200 },
+  );
 }

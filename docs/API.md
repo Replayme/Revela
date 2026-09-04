@@ -223,8 +223,11 @@ Regras que valem para qualquer um deles:
 - reidrate o hash (recalcule com parâmetros atuais) no próximo login bem
   sucedido quando o custo armazenado estiver defasado.
 
-O `lib/mock-db.ts` deste projeto usa scrypt com salt por usuário e comparação
+O `lib/password.ts` deste projeto usa scrypt com salt por usuário e comparação
 em tempo constante — serve de referência, mas troque por argon2id em produção.
+O formato guardado (`scrypt$<salt>$<hash>`) começa pelo nome do esquema
+justamente para essa troca poder ser gradual, sem forçar ninguém a redefinir a
+senha.
 
 ---
 
@@ -433,7 +436,9 @@ ele precisa expor: os pedidos da sessão, mais recentes primeiro, paginados.
 
 ## 12. Checklist antes de ir ao ar
 
-- [ ] Trocar `lib/mock-db.ts` por banco real com argon2id
+- [x] Trocar o armazenamento em memória por banco real — SQL Server, em
+      `lib/store-sqlserver.ts` (ver docs/BANCO.md)
+- [ ] Trocar o scrypt de `lib/password.ts` por argon2id
 - [ ] Rate limiting em Redis ou no gateway, não em memória
 - [ ] `AUTH_SECRET` forte e fora do repositório
 - [ ] `Secure` nos cookies e HSTS ativo

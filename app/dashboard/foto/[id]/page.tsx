@@ -41,8 +41,9 @@ export default async function EditarFotoPage({
     redirect(`/login?next=${encodeURIComponent(`/dashboard/foto/${id}`)}`);
   }
 
-  const ehAutor = painelDoAutor(session.email) !== null;
-  const photo = ehAutor ? fotoDoAutor(session.email, id) : undefined;
+  const painel = await painelDoAutor(session.email);
+  const ehAutor = painel !== null;
+  const photo = fotoDoAutor(painel, id);
   if (ehAutor && !photo) notFound();
 
   return (

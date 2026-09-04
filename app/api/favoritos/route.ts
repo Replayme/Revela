@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { favoritesByUser, toggleFavorite } from '@/lib/mock-db';
+import { favoritesByUser, toggleFavorite } from '@/lib/repository';
 import { findPhoto } from '@/lib/mock-photos';
 import { currentSession } from '@/lib/session';
 
@@ -13,10 +13,10 @@ export const dynamic = 'force-dynamic';
  * Sem sessão a resposta é 401 e a tela manda para o login com o caminho de
  * volta — nunca uma lista vazia fingindo que deu certo.
  *
- * ⚠️ O armazenamento é o mock em memória (`lib/mock-db.ts`), que some a cada
- * restart. Em produção é uma tabela com chave composta (usuário, foto) e
- * índice único nos dois: favoritar duas vezes em paralelo não pode criar duas
- * linhas.
+ * O armazenamento é `lib/repository.ts`: a tabela `dbo.favorites`, com chave
+ * primária composta (usuário, foto) — favoritar duas vezes em paralelo não
+ * cria duas linhas —, ou a memória do processo quando não há banco
+ * configurado. Ver docs/BANCO.md.
  */
 export async function GET() {
   const session = await currentSession();
@@ -25,7 +25,7 @@ export async function GET() {
     return NextResponse.json({ error: 'UNAUTHENTICATED' }, { status: 401 });
   }
 
-  return NextResponse.json({ photoIds: favoritesByUser(session.sub) });
+  return NextResponse.json({ photoIds: await favoritesByUser(session.sub) });
 }
 
 /**
@@ -56,6 +56,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     photoId,
-    favorited: toggleFavorite(session.sub, photoId),
+    favorited: await toggleFavorite(session.sub, photoId),
   });
 }

@@ -37,7 +37,7 @@ export default async function MinhasFotosPage() {
     redirect(`/login?next=${encodeURIComponent('/dashboard/minhas-fotos')}`);
   }
 
-  const painel = painelDoAutor(session.email);
+  const painel = await painelDoAutor(session.email);
 
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
@@ -75,7 +75,7 @@ export default async function MinhasFotosPage() {
   );
 }
 
-function Painel({ painel }: { painel: NonNullable<ReturnType<typeof painelDoAutor>> }) {
+function Painel({ painel }: { painel: NonNullable<Awaited<ReturnType<typeof painelDoAutor>>> }) {
   const { photographer, photos } = painel;
   const resumo = summarize(photos);
 

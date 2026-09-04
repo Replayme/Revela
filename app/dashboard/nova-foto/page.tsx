@@ -36,7 +36,7 @@ export default async function NovaFotoPage() {
     redirect(`/login?next=${encodeURIComponent('/dashboard/nova-foto')}`);
   }
 
-  const painel = painelDoAutor(session.email);
+  const painel = await painelDoAutor(session.email);
 
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">

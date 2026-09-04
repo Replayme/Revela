@@ -37,8 +37,9 @@ export default async function VendasPage() {
     redirect(`/login?next=${encodeURIComponent('/dashboard/vendas')}`);
   }
 
-  const ehAutor = painelDoAutor(session.email) !== null;
-  const vendas = ehAutor ? vendasDoAutor(session.email) : [];
+  const painel = await painelDoAutor(session.email);
+  const ehAutor = painel !== null;
+  const vendas = await vendasDoAutor(painel);
   const total = vendas.reduce((soma, venda) => soma + venda.order.pricePaid, 0);
 
   return (

@@ -5,7 +5,7 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { LogoutButton } from '@/components/logout-button';
 import { IconDownload, IconImage, IconLicense } from '@/components/icons';
-import { ordersByUser } from '@/lib/mock-db';
+import { ordersByUser } from '@/lib/repository';
 import { findPhoto } from '@/lib/mock-photos';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 import { currentSession } from '@/lib/session';
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
 
   // Um pedido cuja foto saiu do acervo não some da lista: a licença é
   // perpétua, e o que foi comprado continua sendo da pessoa.
-  const orders = ordersByUser(session.sub).map((order) => ({
+  const orders = (await ordersByUser(session.sub)).map((order) => ({
     order,
     photo: findPhoto(order.photoId),
   }));

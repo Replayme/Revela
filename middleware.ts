@@ -7,7 +7,7 @@ import { SESSION_COOKIE } from '@/lib/session-cookie';
  * **Aqui só se confere se o cookie existe — não a assinatura.**
  *
  * O middleware roda no runtime de edge, onde `node:crypto` não existe, e é com
- * `node:crypto` que `lib/mock-db.ts` verifica o HMAC da sessão. Havia duas
+ * `node:crypto` que `lib/tokens.ts` verifica o HMAC da sessão. Havia duas
  * saídas: forçar o middleware para o runtime Node, ou deixá-lo fazer só a
  * checagem barata. A segunda foi a escolhida porque a primeira paga o custo do
  * runtime Node em *toda* requisição que casa com o `matcher`, para repetir uma

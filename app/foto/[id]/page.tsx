@@ -5,7 +5,7 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { BuyButton } from '@/components/buy-button';
 import { IconCheck, IconStar } from '@/components/icons';
-import { findOrder } from '@/lib/mock-db';
+import { findOrder } from '@/lib/repository';
 import { findPhoto, mockPhotos, photosByPhotographer } from '@/lib/mock-photos';
 import { findPhotographer } from '@/lib/mock-photographers';
 import { UNIVERSAL_LICENSE, licenseLabel } from '@/lib/license';
@@ -58,7 +58,7 @@ export default async function PhotoPage({
   if (!photo) notFound();
 
   const session = await currentSession();
-  const pedido = session ? findOrder(session.sub, photo.id) : undefined;
+  const pedido = session ? await findOrder(session.sub, photo.id) : undefined;
 
   const photographer = findPhotographer(photo.photographer.id);
   const outras = photosByPhotographer(photo.photographer.id).filter(

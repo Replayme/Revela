@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { findOrderById } from '@/lib/mock-db';
+import { findOrderById } from '@/lib/repository';
 import { findPhoto } from '@/lib/mock-photos';
 import { currentSession } from '@/lib/session';
 
@@ -32,7 +32,7 @@ export async function GET(
     return NextResponse.json({ error: 'UNAUTHENTICATED' }, { status: 401 });
   }
 
-  const order = findOrderById(session.sub, (await params).id);
+  const order = await findOrderById(session.sub, (await params).id);
   if (!order) {
     return NextResponse.json({ error: 'ORDER_NOT_FOUND' }, { status: 404 });
   }

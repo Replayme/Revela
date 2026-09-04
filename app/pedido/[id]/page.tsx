@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { IconAlert, IconCheck, IconDownload } from '@/components/icons';
-import { findOrderById } from '@/lib/mock-db';
+import { findOrderById } from '@/lib/repository';
 import { findPhoto } from '@/lib/mock-photos';
 import { UNIVERSAL_LICENSE, licenseByVersion } from '@/lib/license';
 import { currentSession } from '@/lib/session';
@@ -38,7 +38,7 @@ export default async function OrderPage({
   const session = await currentSession();
   if (!session) redirect(`/login?next=${encodeURIComponent(`/pedido/${id}`)}`);
 
-  const order = findOrderById(session.sub, id);
+  const order = await findOrderById(session.sub, id);
   if (!order) notFound();
 
   const photo = findPhoto(order.photoId);
