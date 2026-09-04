@@ -1,289 +1,198 @@
-# SQL Server na Vercel
+# O banco
 
-## A premissa que costuma travar tudo
-
-> "A Vercel não tem suporte nativo a SQL Server."
-
-Ela também não tem suporte nativo a Postgres, a MySQL nem a Redis. A Vercel
-roda **Node.js** — o que dá para alcançar de dentro de uma função é o que a
-rede alcança, e ponto. O driver `mssql` fala TDS por cima de `node:net` e
-`node:tls` através do `tedious`, que é JavaScript puro: sem binário nativo, sem
-ODBC, sem `msnodesqlv8`. Não há nada para a plataforma "suportar".
-
-Existem dois lugares onde de fato **não** funciona, e vale conhecê-los antes:
-
-1. **Runtime de edge.** Lá não existe soquete TCP cru, só `fetch`. É por isso
-   que o `middleware.ts` deste projeto confere apenas a *presença* do cookie e
-   deixa a verificação da assinatura para a página — o comentário está lá. Toda
-   rota que fala com o banco declara `export const runtime = 'nodejs'`.
-2. **Build e prerender.** Uma página estática que consulta o banco congela o
-   resultado no momento do deploy. As rotas daqui são `dynamic = 'force-dynamic'`.
-
-O problema real não é o SQL Server. É a **rede**.
+Postgres, servido pelo [Neon](https://vercel.com/marketplace/neon) através do
+Marketplace da Vercel.
 
 ---
 
-## O problema real: rede, não driver
+## Por que não SQL Server
 
-### 1. O banco precisa ser alcançável
+A primeira versão deste back-end foi escrita em SQL Server, e funcionava. Vale
+registrar por que não ficou, porque a pergunta volta.
 
-A função roda na infraestrutura da Vercel, não na sua. Ou o banco tem endpoint
-público (com TLS), ou existe alguma coisa entre os dois.
+**A premissa de que a Vercel "não suporta SQL Server" é falsa.** Ela também não
+suporta nativamente Postgres, MySQL ou Redis: a Vercel roda Node.js, e o que dá
+para alcançar de dentro de uma função é o que a rede alcança. O driver `mssql`
+fala TDS por cima de `node:net`/`node:tls` através do `tedious`, que é
+JavaScript puro. Conectava.
 
-### 2. O IP de saída da Vercel não é fixo
+O que pesou foram três atritos que **não somem** com SQL Server, por melhor que
+seja o código:
 
-Nos planos Hobby e Pro, a função sai por um IP que muda. Firewall por IP não
-fecha nada: você acabaria liberando `0.0.0.0/0`, que é liberar a internet.
+1. **O IP de saída da Vercel não é fixo** nos planos Hobby e Pro. Firewall por
+   IP não fecha nada — a alternativa honesta era liberar `0.0.0.0/0` no servidor
+   e defender só por credencial. Aqui esse problema não existe: a conexão é
+   HTTPS autenticada por connection string, não há porta para abrir.
 
-As saídas honestas são três:
+2. **Pool em serverless é uma conta que não fecha bem.** Cada instância da
+   função é um processo com o seu próprio pool, então o total pedido ao servidor
+   é `instâncias × pool_max` — vinte instâncias com pool de 10 são 200 conexões,
+   e o excesso não vira fila, vira erro de login no pico. Dava para mitigar com
+   pool pequeno e cache no `globalThis`, e era o que estava feito. O driver da
+   Neon usado hoje conversa por **HTTPS**, sem sessão: não há pool para
+   dimensionar, não há conexão ociosa segurando recurso, e uma instância fria
+   não paga handshake antes da primeira linha.
 
-- **Aceitar o endpoint público** e defender por credencial + TLS + auditoria,
-  não por IP. É o que a maioria dos projetos deste tamanho faz.
-- **IP de saída dedicado** (Vercel Secure Compute, plano Enterprise): aí existe
-  faixa fixa para liberar no firewall.
-- **Não expor o banco** e pôr uma API sua no meio (topologia C, abaixo).
+3. **Preview apontando para o banco de produção.** Todo pull request abre um
+   Preview Deployment, e mantê-los em bancos separados era disciplina manual —
+   o tipo de coisa que funciona até o dia em que não funciona. A integração do
+   Neon cria um **branch do banco por Preview** (copy-on-write, com o schema e
+   os dados do pai, sem custo de armazenamento extra) e o destrói junto com o
+   preview.
 
-No Azure SQL, atenção a uma armadilha: a opção *"Allow Azure services and
-resources to access this server"* **não** cobre a Vercel — ela vale para
-recursos dentro do Azure, e a Vercel não é um deles. Ligar aquilo achando que
-resolveu é abrir o servidor para todo o Azure sem ganhar acesso nenhum.
+Some-se o contexto: o **Vercel Postgres virou Neon**. A Vercel descontinuou o
+próprio serviço de Postgres, moveu as bases existentes para o Neon via
+Marketplace entre o fim de 2024 e o começo de 2025, e parou de manter o
+`@vercel/postgres`. Neon não é uma opção entre várias — é o caminho que a
+plataforma escolheu para si.
 
-### 3. Latência é por consulta
+**Quando SQL Server seria a resposta certa:** se fosse requisito (exigência
+acadêmica, banco corporativo já existente, uma equipe que só escreve T-SQL).
+Não era o caso. Custo, aliás, não decidiu nada: o Azure SQL tem oferta gratuita
+vitalícia — 100.000 vCore-segundos de compute serverless, 32 GB de dados e 32 GB
+de backup por mês — que cobriria este projeto de sobra.
 
-Cada consulta é uma ida e volta pela internet. Uma conexão nova custa mais:
-handshake TLS + login TDS, vários round-trips antes da primeira linha. Por isso
-duas coisas importam mais do que parecem — **a região** (função e banco no mesmo
-lugar) e **o pool** (não abrir conexão a cada requisição).
-
----
-
-## As três topologias
-
-### A. Vercel → Azure SQL, direto  ← *é o que este repositório implementa*
-
-O Azure SQL Database é SQL Server gerenciado: mesmo T-SQL, mesmo driver, TLS
-obrigatório, endpoint público, backup automático.
-
-- **A favor:** um deploy só. Nada de segunda aplicação para manter. É o caminho
-  mais curto entre onde você está e um site com dados de verdade.
-- **Contra:** o banco fica na internet. A defesa é credencial forte, TLS,
-  usuário com permissão mínima e auditoria — não firewall.
-
-### B. Vercel → SQL Server seu (VPS, máquina própria, contêiner)
-
-- **A favor:** você já tem o servidor, e talvez os dados também.
-- **Contra:** você vira DBA e SRE. Porta 1433 aberta na internet é varrida o dia
-  inteiro, e o certificado precisa ser válido de verdade — autoassinado obriga
-  `SQLSERVER_TRUST_SERVER_CERTIFICATE=true`, que desliga a única proteção contra
-  alguém no meio do caminho. Nunca use o `sa`; crie login dedicado com permissão
-  só no banco da aplicação.
-
-### C. Vercel → API sua → SQL Server (banco em rede privada)
-
-O site chama HTTPS; quem fala TDS com o banco é uma aplicação sua (ASP.NET Core,
-Node, o que for), hospedada onde o banco está — Azure App Service, uma VM,
-Railway, Render.
-
-- **A favor:** o banco nunca aparece na internet. É a resposta quando existe
-  política de segurança, dado sensível, ou um banco corporativo atrás de VPN.
-- **Contra:** dois deploys, dois lugares para autenticar, uma camada a mais para
-  manter em dia.
-
-Se você for por aqui, o código deste repositório continua servindo:
-`lib/store-sqlserver.ts` migra inteiro para dentro da API, e o `Store` do site
-vira um cliente HTTP. O contrato — `lib/model.ts` — não muda, que é exatamente o
-motivo de ele existir separado.
-
-### Qual escolher
-
-Comece por **A**. Vá para **C** se a política proibir expor o banco. **B** só se
-você já tem o servidor e sabe mantê-lo — não é o caminho curto que parece ser.
+O histórico está no PR que trouxe as duas versões. O contrato em
+`lib/model.ts` é o que tornou a troca barata: **nenhuma rota e nenhuma página
+mudou uma linha.**
 
 ---
 
-## Pool de conexões: o que muda em serverless
+## O que fica de fora do runtime de edge
 
-Cada instância da função é um processo próprio, com o seu próprio pool. Isso
-inverte a conta a que se está acostumado:
+Sendo HTTPS, o driver funcionaria até dentro do `middleware.ts`, que roda em
+edge. Ele continua sem consultar o banco — confere só a presença do cookie e
+deixa a assinatura para a página, como o comentário lá explica. As rotas seguem
+em `runtime = 'nodejs'` por causa do `node:crypto` do hash de senha, não por
+causa do banco.
+
+Vale saber que a porta está aberta: se um dia o middleware precisar de fato
+consultar o banco (uma sessão revogável, por exemplo), dá.
+
+---
+
+## Como está implementado
 
 ```
-conexões pedidas ao servidor  =  instâncias ativas  ×  SQLSERVER_POOL_MAX
-```
-
-Vinte instâncias com pool de 10 são 200 conexões. O Azure SQL Basic aceita 300
-no total; o excesso não vira fila, vira erro de login — e o erro aparece como
-"o site caiu" no pico, que é o pior momento para descobrir isso.
-
-O que o `lib/db.ts` faz por causa disso:
-
-- `max: 4`, `min: 0`, ocioso devolvido em 30s. Instância parada não segura
-  conexão que outra precisa.
-- Pool no `globalThis`, guardando a **promessa** e não o pool pronto: duas
-  requisições que chegam juntas numa instância fria compartilham a conexão em
-  vez de abrirem duas.
-- `pool.on('error')` limpa o cache — senão uma conexão que caiu deixaria uma
-  promessa resolvida e inútil, e toda requisição seguinte falharia para sempre.
-- Uma nova tentativa em erro transitório. O `40613` do Azure SQL é o caso
-  concreto: no tier serverless o banco pausa sozinho sem uso, e a primeira
-  conexão depois da pausa falha enquanto ele acorda.
-
-Não use a conexão global do `mssql` (`sql.connect()` sem instanciar pool): ela é
-um singleton de módulo que não sobrevive bem ao empacotamento do Next, onde
-rotas e componentes de servidor viram bundles separados.
-
-O **Fluid Compute**, hoje padrão na Vercel, ajuda de verdade aqui: uma instância
-atende várias requisições concorrentes, então o pool é reaproveitado em vez de
-ser aberto e jogado fora a cada chamada.
-
----
-
-## Região e latência
-
-Ponha a função na mesma região do banco. Um site servido de Washington
-consultando um banco em São Paulo paga ~200 ms por consulta, e uma página com
-três consultas em sequência já perdeu meio segundo antes de renderizar.
-
-No `vercel.json`, para Azure SQL em `brazilsouth`:
-
-```json
-{ "regions": ["gru1"] }
-```
-
-(ou em Project Settings → Functions → Region). Confira a lista de regiões da
-Vercel antes de fixar — e lembre que o CDN continua global; só a função muda.
-
----
-
-## Segredos
-
-Variáveis de ambiente em Project Settings → Environment Variables, marcadas como
-**Sensitive**. Nunca no repositório: `.env.local` está no `.gitignore` e deve
-continuar.
-
-Use ambientes separados. *Preview* apontando para o banco de produção é como se
-apaga dado de gente de verdade sem querer — e todo pull request abre um Preview.
-
----
-
-## Como está implementado aqui
-
-```
-lib/model.ts            o modelo e o contrato `Store` — quem quiser trocar o
-                        armazenamento cumpre esta interface e nada mais
-lib/repository.ts       a porta única dos dados; escolhe banco ou memória
-lib/db.ts               pool, consultas parametrizadas, erros do SQL Server
-lib/store-sqlserver.ts  o armazenamento em SQL Server
-lib/store-memory.ts     o armazenamento em memória, para desenvolver
-db/001_schema.sql       tabelas, índices e restrições
-db/002_seed_demo.sql    contas de demonstração — nunca em produção
-scripts/migrate.mjs     `npm run db:migrate`
+lib/model.ts           o modelo e o contrato `Store` — quem quiser trocar o
+                       armazenamento cumpre esta interface e nada mais
+lib/repository.ts      a porta única dos dados; escolhe banco ou memória
+lib/db.ts              cliente HTTP, consultas parametrizadas
+lib/store-postgres.ts  o armazenamento em Postgres
+lib/store-memory.ts    o armazenamento em memória, para desenvolver
+db/001_schema.sql      tabelas, índices e restrições
+db/002_seed_demo.sql   contas de demonstração — nunca em produção
+scripts/migrate.mjs    `npm run db:migrate`
 ```
 
 Rotas e páginas importam de `lib/repository.ts` e mais nada. A escolha do
-armazenamento é **pela configuração**, não por `NODE_ENV`: com as quatro
-variáveis `SQLSERVER_*` definidas, é o banco; sem elas, é a memória. Assim um
-clone recém-feito roda com `npm run dev` sem provisionar nada, e a mesma build
-que roda na Vercel roda apontada para um SQL Server local.
+armazenamento é **pela configuração**, não por `NODE_ENV`: com `DATABASE_URL`
+definida, é o banco; sem ela, é a memória do processo. Um clone recém-feito roda
+com `npm run dev` sem provisionar nada.
 
-Duas garantias moram no esquema, e não no código, de propósito — verificar em
-JavaScript não vale nada com duas requisições ao mesmo tempo:
+### As garantias moram no esquema
 
-- `UX_users_email` — não existem duas contas com o mesmo e-mail;
-- `UX_orders_user_photo` — a licença é única por (usuário, foto). Pagar duas
-  vezes pela mesma foto é impossível por construção, não por um `if`.
+Verificação em JavaScript não vale nada com duas requisições ao mesmo tempo —
+entre o `SELECT` e o `INSERT` cabe outra. Por isso:
 
-Toda consulta é parametrizada. Nenhum valor vindo do cliente entra concatenado
-no texto do comando.
+| Restrição | O que garante |
+| --- | --- |
+| `users_email_key` | não existem duas contas com o mesmo e-mail |
+| `CHECK (email = lower(email))` | a aplicação nunca esquece de normalizar |
+| `orders_user_photo_key` | a licença é única por (usuário, foto) |
+| `orders_price_paid_check` | não se grava pedido com preço negativo |
+| FK de `orders` **sem** cascade | apagar a conta não apaga a venda que o autor recebeu |
+| FK de `favorites` e tokens **com** cascade | dado acessório vai junto com a conta |
+
+O repositório aproveita isso em vez de duplicar: `ON CONFLICT DO NOTHING …
+RETURNING` aparece em `createUser` e `createOrder`, e a linha devolvida (ou a
+ausência dela) é que conta o que aconteceu — sem `try/catch` para separar "deu
+certo" de "já existia", que é o jeito de um dia engolir um erro que não era esse.
+
+### Um comando por consulta
+
+Como o driver é HTTP, não há transação interativa (`BEGIN`, decidir no meio,
+`COMMIT`). Nada aqui precisa: onde seria preciso mais de um passo, o Postgres
+resolve numa consulta só, com CTE. Os dois casos que valem ler:
+
+- **`toggleFavorite`** — apaga; se não apagou nada, insere; devolve o estado que
+  ficou. O `NOT EXISTS (SELECT 1 FROM removido)` não é só a condição, é o que
+  **ordena** as duas partes: um CTE que lê outro roda depois dele.
+- **`consumeResetToken`** — o `UPDATE … WHERE used_at IS NULL` é o que torna o
+  token de uso único (quem marcar a linha é quem usa), e o `SELECT` ao lado
+  separa "venceu" de "não existe / já foi usado", vendo a linha como estava
+  antes do UPDATE.
+
+Se um dia aparecer algo genuinamente interativo — cobrança, provavelmente — o
+mesmo pacote exporta `Pool`, compatível com `pg`, por WebSocket.
 
 ---
 
-## Passo a passo — Azure SQL
+## Passo a passo — Neon pela Vercel
 
-**1. Criar servidor e banco.** Portal do Azure → SQL databases → Create. Anote o
-nome do servidor (`<algo>.database.windows.net`). Para começar, o tier
-*Serverless* (General Purpose) com auto-pause é o mais barato; saiba que a
-primeira consulta depois da pausa demora alguns segundos — o `lib/db.ts` já
-repete a tentativa por causa disso.
+**1. Instalar.** No painel do projeto na Vercel: **Storage** (ou Marketplace) →
+**Neon** → **Connect Project**. Escolha a região mais perto dos seus usuários e
+a mesma da função. Provisionamento e cobrança ficam pela Vercel; o painel do
+Neon continua acessível com o mesmo login.
 
-**2. Firewall.** Networking → Public access → Selected networks. Adicione o seu
-IP para conseguir migrar da sua máquina. Para a Vercel, leia de novo a seção
-"IP de saída" acima e decida conscientemente: liberar `0.0.0.0/0` é uma escolha
-com consequência, não um passo de tutorial.
+**2. As variáveis aparecem sozinhas.** A integração injeta `DATABASE_URL` (e as
+demais `PG*`) em Production, Preview e Development. Não há nada para copiar à
+mão, e não há segredo para vazar em commit.
 
-**3. Dois logins, não um.** O login da aplicação não pode criar nem apagar
-tabela — se um dia ele vazar, a diferença entre "leram os dados" e "apagaram o
-banco" é esta:
+**3. Ligar o branch por Preview.** Nas configurações da integração, ative a
+criação automática de um branch do banco por Preview Deployment. É o que faz
+cada pull request escrever no seu próprio banco, com uma cópia dos dados, e
+limpar sozinho quando o preview morre.
 
-```sql
--- no banco master
-CREATE LOGIN revela_app     WITH PASSWORD = '<senha longa e aleatória>';
-CREATE LOGIN revela_migrate WITH PASSWORD = '<outra senha>';
-
--- no banco da aplicação
-CREATE USER revela_app     FOR LOGIN revela_app;
-CREATE USER revela_migrate FOR LOGIN revela_migrate;
-
--- a aplicação lê e escreve linha; não mexe em estrutura
-ALTER ROLE db_datareader ADD MEMBER revela_app;
-ALTER ROLE db_datawriter ADD MEMBER revela_app;
-
--- a migração mexe em estrutura
-ALTER ROLE db_ddladmin   ADD MEMBER revela_migrate;
-ALTER ROLE db_datareader ADD MEMBER revela_migrate;
-ALTER ROLE db_datawriter ADD MEMBER revela_migrate;
-```
-
-**4. Migrar.** Em `.env.local`, com as credenciais de `revela_migrate`:
-
-```bash
-SQLSERVER_HOST=<servidor>.database.windows.net
-SQLSERVER_DATABASE=revela
-SQLSERVER_USER=revela_migrate
-SQLSERVER_PASSWORD=...
-```
+**4. Migrar.** Localmente, com `DATABASE_URL` no `.env.local`:
 
 ```bash
 npm run db:migrate            # só o esquema
 npm run db:migrate -- --seed  # com as contas de demonstração (local!)
 ```
 
-O script registra o que aplicou em `dbo.schema_migrations`; rodar de novo não
-faz nada. No Azure SQL o usuário **não** leva o sufixo `@<servidor>` quando o
-driver é o `tedious`.
+O script registra o que aplicou em `schema_migrations`; rodar de novo não faz
+nada. Cada arquivo vai numa transação só, com o registro dele junto — no
+Postgres o DDL é transacional, então não existe o estado "metade das tabelas
+criadas".
 
-**5. Publicar.** Na Vercel, as quatro variáveis com as credenciais de
-`revela_app` (não as de migração), em Production e Preview. Redeploy — variável
-de ambiente nova só vale no build seguinte.
-
-**6. Conferir.** Faça login com uma conta de teste, compre uma foto, e confira
-no banco:
+**5. Conferir.** Faça login com uma conta de teste, compre uma foto, e olhe no
+painel do Neon (ou por `psql`):
 
 ```sql
-SELECT TOP 10 * FROM dbo.orders ORDER BY created_at DESC;
+SELECT * FROM orders ORDER BY created_at DESC LIMIT 10;
 ```
-
-Se a linha está lá, acabou: o site na Vercel está gravando no seu SQL Server.
 
 ---
 
-## SQL Server local, para desenvolver
+## Postgres local, para desenvolver
+
+Não é obrigatório — sem `DATABASE_URL` o site roda na memória. Mas se quiser o
+banco de verdade na sua máquina:
 
 ```bash
-docker run -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=Local@2026dev' \
-  -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+docker run -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=revela \
+  -p 5432:5432 -d postgres:16
 ```
 
 ```bash
 # .env.local
-SQLSERVER_HOST=localhost
-SQLSERVER_DATABASE=revela
-SQLSERVER_USER=sa
-SQLSERVER_PASSWORD=Local@2026dev
-SQLSERVER_TRUST_SERVER_CERTIFICATE=true   # certificado autoassinado do contêiner
+DATABASE_URL=postgresql://postgres:dev@localhost:5432/revela
 ```
 
-O banco `revela` precisa existir antes (`CREATE DATABASE revela;`) — a migração
-cria tabelas, não bancos. `sa` e `trustServerCertificate` aqui, **só** aqui.
+Uma ressalva: `npm run db:migrate` e `lib/db.ts` usam o driver HTTP da Neon, que
+fala com o endpoint da Neon — **não** com um Postgres comum. Para um banco
+local, aplique o esquema direto:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/001_schema.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/002_seed_demo.sql
+```
+
+E para a aplicação enxergar esse banco, troque o cliente de `lib/db.ts` por
+`Pool` do `pg`. Se isso virar rotina para mais de uma pessoa, vale transformar
+em um segundo store selecionado pela URL — hoje não é, e um caminho que ninguém
+usa é um caminho que apodrece sem ninguém notar.
 
 ---
 
@@ -293,25 +202,23 @@ cria tabelas, não bancos. `sa` e `trustServerCertificate` aqui, **só** aqui.
   instâncias, cada uma tem a sua contagem e o limite deixa de valer. Vai para
   Redis/Upstash ou para o gateway. É o furo mais próximo de virar problema.
 - **Sessão não é revogável.** O token é assinado e válido até expirar; o logout
-  só apaga o cookie. Revogar exige guardar a sessão do lado do servidor.
+  só apaga o cookie. Revogar exige guardar a sessão do lado do servidor — e
+  agora dá para consultar isso até no middleware.
 - **Fotos ainda não têm tabela.** O acervo vive em `lib/mock-photos.ts`, e por
-  isso `orders.photo_id` é texto solto, sem chave estrangeira. Quando
-  `dbo.photos` existir, as FKs entram numa migração nova.
+  isso `orders.photo_id` e `favorites.photo_id` são texto solto, sem chave
+  estrangeira. Quando `photos` existir, as FKs entram numa migração nova.
 - **Não há cobrança.** O pedido registra preço e versão da licença; falta o
   pagamento no meio.
-- **Backup e restauração não estão testados.** Backup automático que nunca foi
-  restaurado é backup que talvez não exista.
+- **Restauração de backup não foi testada.** O Neon faz *point-in-time
+  recovery*; backup que nunca foi restaurado é backup que talvez não exista.
 
 ---
 
 ## Checklist antes de apontar a produção para o banco
 
-- [ ] Login da aplicação sem permissão de DDL (dois logins, passo 3)
-- [ ] `SQLSERVER_TRUST_SERVER_CERTIFICATE` ausente ou `false` em produção
+- [ ] Branch por Preview ativado (nenhum PR escrevendo na base de produção)
+- [ ] `db/002_seed_demo.sql` **não** aplicado em produção
 - [ ] Região da função igual à do banco
-- [ ] `SQLSERVER_POOL_MAX` conferido contra o limite de conexões do tier
-- [ ] Preview e Production apontando para bancos **diferentes**
-- [ ] Variáveis marcadas como Sensitive na Vercel
-- [ ] `002_seed_demo.sql` **não** aplicado em produção
 - [ ] `AUTH_SECRET` forte e distinto do de desenvolvimento
-- [ ] Restauração de backup testada uma vez, de verdade
+- [ ] Limpeza periódica de `password_reset_tokens` vencidos agendada
+- [ ] Restauração testada uma vez, de verdade

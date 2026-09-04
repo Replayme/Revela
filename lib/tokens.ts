@@ -7,7 +7,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
  * Os dois vivem no mesmo arquivo porque dependem do mesmo segredo, e um
  * segredo com dois donos é um segredo que um dia é lido de dois lugares
  * diferentes. Nenhuma das duas funções toca o armazenamento — é o que permite
- * que a implementação em memória e a do SQL Server usem exatamente estas, sem
+ * que a implementação em memória e a do Postgres usem exatamente estas, sem
  * cópia.
  */
 

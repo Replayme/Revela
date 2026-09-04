@@ -15,18 +15,18 @@ export type { CreateOrderResult, CreateUserResult, Order, ResetCheck, User };
  * A porta única de entrada para os dados.
  *
  * Rotas e páginas importam **daqui**, nunca de `store-memory` ou
- * `store-sqlserver` — é o que permite trocar o armazenamento sem tocar em
+ * `store-postgres` — é o que permite trocar o armazenamento sem tocar em
  * nenhuma tela, e é o que faz a decisão de qual usar existir num lugar só.
  *
- * A escolha é pela configuração, não por um `NODE_ENV`: com as quatro
- * variáveis `SQLSERVER_*` definidas, é o banco; sem elas, é a memória. Assim
- * `npm run dev` funciona num clone recém-feito, e a mesma build que roda na
- * Vercel roda apontada para um SQL Server local sem recompilar nada.
+ * A escolha é pela configuração, não por um `NODE_ENV`: com `DATABASE_URL`
+ * definida, é o banco; sem ela, é a memória. Assim `npm run dev` funciona num
+ * clone recém-feito, e a mesma build que roda na Vercel roda apontada para
+ * qualquer Postgres sem recompilar nada.
  *
- * O import do SQL Server é dinâmico de propósito. Numa função serverless o
- * que custa é o *cold start*, e avaliar o driver `mssql` em toda instância que
- * nunca vai falar com banco nenhum é custo puro. Todas as funções já são
- * assíncronas, então o `await` extra não muda a forma de nada.
+ * O import do Postgres é dinâmico de propósito. Numa função serverless o que
+ * custa é o *cold start*, e avaliar o driver em toda instância que nunca vai
+ * falar com banco nenhum é custo puro. Todas as funções já são assíncronas,
+ * então o `await` extra não muda a forma de nada.
  */
 
 let cached: Store | undefined;
@@ -40,15 +40,15 @@ async function getStore(): Promise<Store> {
       // por causa de variável faltando esconderia todo o resto do diagnóstico.
       // Mas ninguém pode achar que os dados estão salvos quando não estão.
       console.warn(
-        '[revela] SQL Server não configurado — usando armazenamento em memória. ' +
+        '[revela] DATABASE_URL ausente — usando armazenamento em memória. ' +
           'Cadastros e pedidos somem a cada instância. Ver docs/BANCO.md.',
       );
     }
     return (cached = memoryStore);
   }
 
-  const { sqlServerStore } = await import('./store-sqlserver');
-  return (cached = sqlServerStore);
+  const { postgresStore } = await import('./store-postgres');
+  return (cached = postgresStore);
 }
 
 /* ------------------------------- usuários -------------------------------- */

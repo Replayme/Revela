@@ -3,12 +3,13 @@
   Aplicador de migrações — `npm run db:migrate`.
 
   Lê `db/*.sql` em ordem de nome e aplica o que ainda não foi aplicado,
-  registrando cada arquivo em `dbo.schema_migrations`. Rodar duas vezes não
-  faz nada na segunda; é para poder chamar sem pensar.
+  registrando cada arquivo em `schema_migrations`. Rodar duas vezes não faz
+  nada na segunda; é para poder chamar sem pensar.
 
-  Por que um script e não `sqlcmd`: para não depender de ter as ferramentas da
-  Microsoft instaladas na máquina de quem entra no projeto. O driver já está
-  no `package.json` porque o site usa.
+  Cada arquivo vai numa transação só, com o registro dele junto: ou o arquivo
+  inteiro entrou e ficou marcado, ou não entrou nada. No Postgres o DDL é
+  transacional, então isto vale também para `CREATE TABLE` — não existe o
+  estado "metade das tabelas criadas" que obrigaria a limpar na mão.
 
   Os arquivos de seed (`*_seed_*.sql`) ficam de fora por padrão — contas de
   demonstração com senha pública não entram em produção por descuido de um
@@ -17,16 +18,16 @@
     npm run db:migrate           # só o esquema
     npm run db:migrate -- --seed # esquema + contas de demonstração
 
-  Este script repete a configuração de conexão de `lib/db.ts` porque roda fora
-  do Next, sem o resolvedor de TypeScript. São as mesmas variáveis de ambiente;
-  ao mexer numa opção que valha para os dois, mexa nos dois lugares.
+  Usa o mesmo driver HTTP da aplicação, e por isso precisa mandar um comando
+  por vez: o protocolo do Postgres não aceita vários separados por `;` numa
+  consulta parametrizada. Daí o `separarComandos` abaixo.
 */
 
 import { readdir, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import sql from 'mssql';
+import { neon } from '@neondatabase/serverless';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -35,60 +36,91 @@ for (const arquivo of ['.env.local', '.env']) {
   const caminho = join(raiz, arquivo);
   if (!existsSync(caminho)) continue;
   for (const linha of (await readFile(caminho, 'utf8')).split('\n')) {
-    const par = linha.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    const par = linha.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
     if (!par) continue;
-    const valor = par[2].replace(/^["'](.*)["']$/, '$1');
-    process.env[par[1]] ??= valor;
+    process.env[par[1]] ??= par[2].replace(/^["'](.*)["']$/, '$1');
   }
 }
 
-const obrigatorias = [
-  'SQLSERVER_HOST',
-  'SQLSERVER_DATABASE',
-  'SQLSERVER_USER',
-  'SQLSERVER_PASSWORD',
-];
-const faltando = obrigatorias.filter((nome) => !process.env[nome]);
-if (faltando.length > 0) {
-  console.error(`Faltam variáveis de ambiente: ${faltando.join(', ')}`);
-  console.error('Ver docs/BANCO.md e .env.example.');
+const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+if (!url) {
+  console.error('Falta DATABASE_URL. Ver docs/BANCO.md e .env.example.');
   process.exit(1);
 }
 
-const comSeed = process.argv.includes('--seed');
+/**
+ * Corta um arquivo `.sql` nos `;` que separam comandos de verdade.
+ *
+ * Um `split(';')` cru quebraria em qualquer ponto e vírgula dentro de texto ou
+ * de comentário — e o seed tem hashes com `$` no meio, que é exatamente o
+ * caractere do dollar-quoting. Este laço anda pelo arquivo sabendo onde está.
+ */
+function separarComandos(sql) {
+  const comandos = [];
+  let atual = '';
 
-const pool = await new sql.ConnectionPool({
-  server: process.env.SQLSERVER_HOST,
-  port: Number(process.env.SQLSERVER_PORT ?? 1433),
-  database: process.env.SQLSERVER_DATABASE,
-  user: process.env.SQLSERVER_USER,
-  password: process.env.SQLSERVER_PASSWORD,
-  pool: { max: 1, min: 0 },
-  options: {
-    encrypt: process.env.SQLSERVER_ENCRYPT !== 'false',
-    trustServerCertificate: process.env.SQLSERVER_TRUST_SERVER_CERTIFICATE === 'true',
-    useUTC: true,
-    abortTransactionOnError: true,
-    // Migração cria índice, o que num banco com dados pode demorar bem mais
-    // que uma consulta de tela.
-    requestTimeout: 120_000,
-  },
-}).connect();
+  for (let i = 0; i < sql.length; i++) {
+    const resto = sql.slice(i);
 
-await pool.request().query(`
-  IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'schema_migrations' AND schema_id = SCHEMA_ID('dbo'))
-    CREATE TABLE dbo.schema_migrations (
-      filename    VARCHAR(200) NOT NULL CONSTRAINT PK_schema_migrations PRIMARY KEY,
-      applied_at  DATETIME2(3) NOT NULL CONSTRAINT DF_schema_migrations_applied_at DEFAULT (SYSUTCDATETIME())
-    );
+    if (resto.startsWith('--')) {
+      const fim = sql.indexOf('\n', i);
+      i = fim === -1 ? sql.length : fim;
+      atual += '\n';
+      continue;
+    }
+    if (resto.startsWith('/*')) {
+      const fim = sql.indexOf('*/', i + 2);
+      i = fim === -1 ? sql.length : fim + 1;
+      atual += ' ';
+      continue;
+    }
+    if (sql[i] === "'" || sql[i] === '"') {
+      const aspa = sql[i];
+      let j = i + 1;
+      while (j < sql.length) {
+        if (sql[j] === aspa && sql[j + 1] === aspa) j += 2; // '' escapa a aspa
+        else if (sql[j] === aspa) break;
+        else j++;
+      }
+      atual += sql.slice(i, j + 1);
+      i = j;
+      continue;
+    }
+    const dollar = resto.match(/^\$[A-Za-z_]*\$/);
+    if (dollar) {
+      const tag = dollar[0];
+      const fim = sql.indexOf(tag, i + tag.length);
+      const j = fim === -1 ? sql.length : fim + tag.length - 1;
+      atual += sql.slice(i, j + 1);
+      i = j;
+      continue;
+    }
+    if (sql[i] === ';') {
+      comandos.push(atual);
+      atual = '';
+      continue;
+    }
+    atual += sql[i];
+  }
+
+  comandos.push(atual);
+  return comandos.map((c) => c.trim()).filter(Boolean);
+}
+
+const sql = neon(url);
+
+await sql.query(`
+  CREATE TABLE IF NOT EXISTS schema_migrations (
+    filename    TEXT        PRIMARY KEY,
+    applied_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  )
 `);
 
 const aplicadas = new Set(
-  (await pool.request().query('SELECT filename FROM dbo.schema_migrations')).recordset.map(
-    (linha) => linha.filename,
-  ),
+  (await sql.query('SELECT filename FROM schema_migrations')).map((l) => l.filename),
 );
 
+const comSeed = process.argv.includes('--seed');
 const arquivos = (await readdir(join(raiz, 'db')))
   .filter((nome) => nome.endsWith('.sql'))
   .filter((nome) => comSeed || !nome.includes('_seed_'))
@@ -99,35 +131,25 @@ let aplicou = 0;
 for (const nome of arquivos) {
   if (aplicadas.has(nome)) continue;
 
-  const conteudo = await readFile(join(raiz, 'db', nome), 'utf8');
-  // `GO` não é comando de SQL, é separador de lote do sqlcmd. Quem escreve a
-  // migração espera poder usá-lo; quem executa precisa cortar por ele.
-  const lotes = conteudo
-    .split(/^\s*GO\s*$/im)
-    .map((lote) => lote.trim())
-    .filter(Boolean);
+  const comandos = separarComandos(await readFile(join(raiz, 'db', nome), 'utf8'));
 
-  const transacao = new sql.Transaction(pool);
-  await transacao.begin();
   try {
-    for (const lote of lotes) await new sql.Request(transacao).query(lote);
-    await new sql.Request(transacao)
-      .input('filename', nome)
-      .query('INSERT INTO dbo.schema_migrations (filename) VALUES (@filename)');
-    await transacao.commit();
+    await sql.transaction((txn) => [
+      ...comandos.map((comando) => txn.query(comando)),
+      txn.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [nome]),
+    ]);
   } catch (erro) {
-    // Sem o rollback, uma migração que falhou no meio deixa metade das tabelas
-    // criadas e a próxima execução falha por outro motivo, escondendo este.
-    await transacao.rollback().catch(() => {});
     console.error(`✗ ${nome}`);
-    console.error(erro.message);
-    await pool.close();
+    console.error(`  ${erro.message}`);
     process.exit(1);
   }
 
-  console.log(`✓ ${nome}`);
+  console.log(`✓ ${nome} (${comandos.length} comando(s))`);
   aplicou += 1;
 }
 
-console.log(aplicou === 0 ? 'Nada a aplicar — o banco já está atualizado.' : `${aplicou} migração(ões) aplicada(s).`);
-await pool.close();
+console.log(
+  aplicou === 0
+    ? 'Nada a aplicar — o banco já está atualizado.'
+    : `${aplicou} migração(ões) aplicada(s).`,
+);

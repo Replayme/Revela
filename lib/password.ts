@@ -5,7 +5,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
  *
  * Estava dentro do `mock-db`, junto com o armazenamento. Só que o algoritmo
  * não é do mock: é a regra do site, e vale igual com o banco em memória ou no
- * SQL Server. Deixá-lo lá obrigaria a implementação nova a importar a antiga
+ * banco. Deixá-lo lá obrigaria a implementação nova a importar a antiga
  * — ou, pior, a escrever a sua própria versão do hash e divergir no dia em
  * que uma das duas for corrigida.
  *

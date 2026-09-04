@@ -45,7 +45,7 @@ export async function painelDoAutor(email: string): Promise<PainelDoAutor | null
 
   // `Promise.all` e não um laço com `await` dentro: são N consultas
   // independentes, e enfileirá-las multiplicaria a latência do painel pelo
-  // número de fotos do acervo do autor. Quando `dbo.photos` existir, as N
+  // número de fotos do acervo do autor. Quando a tabela `photos` existir, as N
   // viram uma só, com GROUP BY (ver `comVendas`).
   const photos = await Promise.all(
     photosByPhotographer(photographerId).map(comVendas),

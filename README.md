@@ -134,16 +134,16 @@ traduzido.
 | Rate limit 5 / 15 min         | `lib/rate-limit.ts`                   |
 | Bloqueio de IP por força bruta| `lib/rate-limit.ts` (15 falhas → 30 min) |
 | Sessão em cookie `HttpOnly`   | `app/api/auth/login/route.ts`         |
-| Token de reset com hash, 24 h, uso único | `lib/tokens.ts` + `dbo.password_reset_tokens` |
+| Token de reset com hash, 24 h, uso único | `lib/tokens.ts` + `password_reset_tokens` |
 | HSTS e cabeçalhos de segurança| `next.config.mjs`                     |
 | `method="post"` nos formulários | evita a senha ir parar na URL se o JS ainda não hidratou |
 
 **Rate limit em memória continua sendo mock**: não sobrevive a duas
 instâncias, e na Vercel são muitas. `docs/API.md` §8 diz o que trocar.
 
-O armazenamento já não é: com as variáveis `SQLSERVER_*` definidas, os dados
-vão para o SQL Server (`docs/BANCO.md`). Sem elas, o site cai na memória do
-processo — bom para desenvolver, inútil em produção.
+O armazenamento já não é: com `DATABASE_URL` definida, os dados vão para o
+Postgres (`docs/BANCO.md`). Sem ela, o site cai na memória do processo — bom
+para desenvolver, inútil em produção.
 
 ---
 
@@ -173,12 +173,10 @@ acima.
 AUTH_SECRET=                    # obrigatório em produção: chave de assinatura da sessão
 REVEAL_ACCOUNT_EXISTENCE=true   # false = "E-mail ou senha incorretos" nos dois casos
 
-# As quatro juntas ligam o SQL Server. Faltando qualquer uma, o site usa a
-# memória do processo. Ver docs/BANCO.md e .env.example.
-SQLSERVER_HOST=
-SQLSERVER_DATABASE=
-SQLSERVER_USER=
-SQLSERVER_PASSWORD=
+# Postgres (Neon). Sem ela, o site usa a memória do processo.
+# Na Vercel a integração do Neon cria esta variável sozinha.
+# Ver docs/BANCO.md e .env.example.
+DATABASE_URL=
 ```
 
 Sobre `REVEAL_ACCOUNT_EXISTENCE`: mensagens distintas são melhores de usar e
@@ -189,23 +187,25 @@ conta no site. `docs/API.md` §7 explica quando vale a pena mudar.
 
 ## Banco de dados
 
-O armazenamento é SQL Server. Preencha as quatro variáveis acima e aplique o
-esquema:
+O armazenamento é Postgres, servido pelo Neon. Preencha `DATABASE_URL` e
+aplique o esquema:
 
 ```bash
 npm run db:migrate            # tabelas, índices e restrições
 npm run db:migrate -- --seed  # + contas de demonstração (nunca em produção)
 ```
 
-Sem essas variáveis o site usa um armazenamento em memória, que some a cada
+Sem essa variável o site usa um armazenamento em memória, que some a cada
 restart — serve para desenvolver, não para publicar.
 
-**`docs/BANCO.md`** responde a pergunta que sempre aparece aqui — como um site
-na Vercel fala com um SQL Server, já que a Vercel "não suporta" SQL Server (ela
-suporta: roda Node, e o driver é JavaScript puro; o que não funciona é o runtime
-de edge). O documento tem as três topologias possíveis, o problema do IP de
-saída que não é fixo, o dimensionamento do pool em serverless e o passo a passo
-do Azure SQL.
+O driver fala com o banco por HTTPS, não por soquete TCP: **não há pool de
+conexões para dimensionar**, que é o problema clássico de banco em serverless.
+Cada Preview Deployment ganha um branch próprio do banco, criado e destruído
+pela integração — nenhum pull request escreve na base de produção.
+
+**`docs/BANCO.md`** explica a escolha: por que Neon e não SQL Server, o que
+muda em serverless, o passo a passo da integração e o que fazer para
+desenvolver com um Postgres local.
 
 ---
 
@@ -246,8 +246,8 @@ lib/
   tokens.ts           token de sessão e token de reset, assinados
   model.ts            o modelo de dados e o contrato de armazenamento
   repository.ts       a porta única dos dados — escolhe banco ou memória
-  db.ts               pool do SQL Server, consultas parametrizadas
-  store-sqlserver.ts  o armazenamento em SQL Server
+  db.ts               cliente do Postgres, consultas parametrizadas
+  store-postgres.ts   o armazenamento em Postgres
   store-memory.ts     o armazenamento em memória, para desenvolver
   i18n.ts             pt / en
 db/
@@ -255,5 +255,5 @@ db/
   002_seed_demo.sql   contas de demonstração (nunca em produção)
 scripts/migrate.mjs   aplicador de migrações — `npm run db:migrate`
 docs/API.md           contrato do back-end
-docs/BANCO.md         SQL Server na Vercel: como e por quê
+docs/BANCO.md         o banco: escolha, esquema e operação
 ```

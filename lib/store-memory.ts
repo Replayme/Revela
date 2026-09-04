@@ -14,7 +14,7 @@ import type {
  * "Banco" em memória — SOMENTE PARA DESENVOLVIMENTO E DEMONSTRAÇÃO.
  * Some a cada restart do servidor.
  *
- * Continua aqui, depois do SQL Server existir, por um motivo prático: quem
+ * Continua aqui, depois do banco existir, por um motivo prático: quem
  * clona o repositório para mexer numa tela roda `npm run dev` e o site
  * funciona, com contas de demonstração e tudo, sem provisionar banco nenhum.
  * O `lib/repository.ts` escolhe um dos dois pela configuração.
@@ -47,7 +47,7 @@ interface MemoryStore {
  * bundle carrega a sua cópia deste módulo, com o seu próprio array. Sem um
  * ponto comum, a compra registrada pela rota some quando a página vai ler —
  * foi exatamente o que aconteceu no teste. `globalThis` é o mesmo objeto para
- * todos os bundles do processo. O pool do SQL Server usa o mesmo truque, pelo
+ * todos os bundles do processo. O cliente do Postgres usa o mesmo truque, pelo
  * mesmo motivo (ver `lib/db.ts`).
  */
 const globalStore = globalThis as typeof globalThis & {
@@ -96,8 +96,8 @@ export const memoryStore: Store = {
    * duas com certeza.
    *
    * A verificação de unicidade abaixo é o que dá para fazer com um array —
-   * entre o `find` e o `push` cabe outra requisição. No SQL Server quem
-   * garante é o índice único, que é o jeito certo; ver `store-sqlserver.ts`.
+   * entre o `find` e o `push` cabe outra requisição. No Postgres quem garante
+   * é a restrição de unicidade, que é o jeito certo; ver `store-postgres.ts`.
    */
   async createUser(input): Promise<CreateUserResult> {
     const email = input.email.trim().toLowerCase();

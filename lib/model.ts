@@ -1,6 +1,6 @@
 /**
  * O modelo de dados e o contrato que toda implementação de armazenamento
- * cumpre — a de memória e a do SQL Server.
+ * cumpre — a de memória e a do Postgres.
  *
  * Existe para que a troca de uma pela outra não seja uma reescrita: as rotas
  * falam com `lib/repository.ts`, que fala com uma destas duas. Tipos num

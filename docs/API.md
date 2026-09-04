@@ -436,8 +436,8 @@ ele precisa expor: os pedidos da sessão, mais recentes primeiro, paginados.
 
 ## 12. Checklist antes de ir ao ar
 
-- [x] Trocar o armazenamento em memória por banco real — SQL Server, em
-      `lib/store-sqlserver.ts` (ver docs/BANCO.md)
+- [x] Trocar o armazenamento em memória por banco real — Postgres (Neon), em
+      `lib/store-postgres.ts` (ver docs/BANCO.md)
 - [ ] Trocar o scrypt de `lib/password.ts` por argon2id
 - [ ] Rate limiting em Redis ou no gateway, não em memória
 - [ ] `AUTH_SECRET` forte e fora do repositório

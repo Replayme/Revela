@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
  * Sem sessão a resposta é 401 e a tela manda para o login com o caminho de
  * volta — nunca uma lista vazia fingindo que deu certo.
  *
- * O armazenamento é `lib/repository.ts`: a tabela `dbo.favorites`, com chave
+ * O armazenamento é `lib/repository.ts`: a tabela `favorites`, com chave
  * primária composta (usuário, foto) — favoritar duas vezes em paralelo não
  * cria duas linhas —, ou a memória do processo quando não há banco
  * configurado. Ver docs/BANCO.md.
