@@ -90,8 +90,11 @@ export function PhotoUploadForm({
   const [categoria, setCategoria] = useState(
     initial?.category ?? mockCategories[0]?.name ?? '',
   );
+  // `toFixed(2)` e não `String(price)`: 89.9 chegaria ao campo como "89,9",
+  // e um campo de dinheiro que abre com um centavo faltando parece defeito de
+  // quem salvou, não de quem preencheu.
   const [preco, setPreco] = useState(
-    initial?.price != null ? String(initial.price).replace('.', ',') : '',
+    initial?.price != null ? initial.price.toFixed(2).replace('.', ',') : '',
   );
   const [selecao, setSelecao] = useState<Selecao | null>(null);
   const [erroArquivo, setErroArquivo] = useState<string | null>(null);

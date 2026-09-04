@@ -124,12 +124,17 @@ function Painel({ painel }: { painel: NonNullable<ReturnType<typeof painelDoAuto
             {photos.map((photo) => (
               <li key={photo.id}>
                 {/*
-                  Sem `editHref` e sem manipuladores: o card então não mostra
-                  ação nenhuma. Um link para uma tela de edição que não existe
-                  seria o décimo link morto do site — nove saíram no commit
-                  anterior.
+                  `editHref` entra agora que a tela existe — antes dela o card
+                  ficava sem ação nenhuma, porque um link para uma tela
+                  inexistente seria o décimo link morto do site.
+                  `onToggleStatus` e `onDelete` continuam de fora: dependem de
+                  rotas que gravam, e o card esconde o controle que ninguém
+                  atende.
                 */}
-                <PhotographerPhotoCard photo={photo} />
+                <PhotographerPhotoCard
+                  photo={photo}
+                  editHref={`/dashboard/foto/${photo.id}`}
+                />
               </li>
             ))}
           </ul>
@@ -170,19 +175,20 @@ function PorVir() {
         Ainda não é possível
       </h2>
       <p className="mt-3 max-w-[60ch] leading-relaxed text-paper-300">
-        Publicar de fato, editar a ficha de uma foto já no acervo, despublicar
-        ou remover. A tela de{' '}
+        Publicar de fato, salvar uma edição, despublicar ou remover. As telas
+        de{' '}
         <Link
           href="/dashboard/nova-foto"
           className="underline decoration-paper/30 decoration-2 underline-offset-4 transition-colors hover:text-paper hover:decoration-amber"
         >
-          enviar foto
+          enviar
         </Link>{' '}
-        já existe e confere o arquivo inteiro, mas para no último passo: falta{' '}
-        <code className="font-mono text-paper-400">POST /api/fotos</code> e o
-        lugar onde guardar o arquivo. Remover depende ainda de decidir o que
-        acontece com as licenças já emitidas — elas continuam valendo, e é isso
-        que torna remover diferente de apagar.
+        e de editar já existem e conferem tudo, mas param no último passo:
+        faltam <code className="font-mono text-paper-400">POST /api/fotos</code>{' '}
+        e <code className="font-mono text-paper-400">PATCH /api/fotos/{'{id}'}</code>{' '}
+        — e, para o envio, o lugar onde guardar o arquivo. Remover depende ainda
+        de decidir o que acontece com as licenças já emitidas: elas continuam
+        valendo, e é isso que torna remover diferente de apagar.
       </p>
       <p className="mt-3 max-w-[60ch] leading-relaxed text-paper-300">
         Até lá o painel mostra o que dá para conferir, e não oferece botão sem
