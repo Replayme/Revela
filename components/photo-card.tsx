@@ -20,10 +20,13 @@ const SIZES =
 export function PhotoCard({
   photo,
   frameNumber,
+  isFavorited = false,
   onToggleFavorite,
 }: {
   photo: Photo;
   frameNumber?: string;
+  /** Vem da lista de quem está logado, não do catálogo: favorito é de alguém. */
+  isFavorited?: boolean;
   onToggleFavorite?: (id: string) => void;
 }) {
   return (
@@ -40,7 +43,11 @@ export function PhotoCard({
             sizes={SIZES}
             className="object-cover"
           />
-          <FavoriteButton photo={photo} onToggle={onToggleFavorite} />
+          <FavoriteButton
+            photo={photo}
+            isFavorited={isFavorited}
+            onToggle={onToggleFavorite}
+          />
         </div>
 
         <div className="flex flex-1 flex-col px-4 py-4 sm:px-5">
@@ -86,27 +93,39 @@ export function PhotoCard({
   );
 }
 
+/**
+ * Sem `onToggle` o botão não aparece.
+ *
+ * Ele já esteve na tela sem quem o atendesse — anunciando `aria-pressed` a
+ * leitor de tela e não mudando nada ao clique. Um controle que mente sobre o
+ * próprio estado é pior que controle nenhum, então quem não passa o
+ * manipulador não ganha o botão.
+ */
 function FavoriteButton({
   photo,
+  isFavorited,
   onToggle,
 }: {
   photo: Photo;
+  isFavorited: boolean;
   onToggle?: (id: string) => void;
 }) {
-  const Icon = photo.isFavorited ? IconHeartFilled : IconHeart;
+  if (!onToggle) return null;
+
+  const Icon = isFavorited ? IconHeartFilled : IconHeart;
 
   return (
     <button
       type="button"
-      onClick={() => onToggle?.(photo.id)}
-      aria-pressed={photo.isFavorited}
+      onClick={() => onToggle(photo.id)}
+      aria-pressed={isFavorited}
       aria-label={
-        photo.isFavorited
+        isFavorited
           ? `Remover “${photo.title}” dos favoritos`
           : `Salvar “${photo.title}” nos favoritos`
       }
       className={`absolute top-2.5 right-2.5 z-10 border border-paper/20 bg-prussia-950/75 p-2 backdrop-blur-sm transition-colors hover:border-amber hover:text-amber ${
-        photo.isFavorited ? 'text-amber' : 'text-paper'
+        isFavorited ? 'text-amber' : 'text-paper'
       }`}
     >
       <Icon width={17} height={17} />

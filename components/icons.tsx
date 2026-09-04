@@ -207,3 +207,14 @@ export function BrandMark(props: IconProps) {
     </svg>
   );
 }
+
+/** Seta para a bandeja: o download do arquivo comprado. */
+export function IconDownload(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M8 2v8.2" />
+      <path d="M4.7 7.1 8 10.4l3.3-3.3" />
+      <path d="M2.6 12.6h10.8" />
+    </svg>
+  );
+}

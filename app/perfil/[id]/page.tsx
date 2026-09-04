@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { IconStar } from '@/components/icons';
 import {
   findPhotographer,
@@ -21,9 +22,17 @@ export async function generateMetadata({
 }) {
   const photographer = findPhotographer((await params).id);
   if (!photographer) return { title: 'Fotógrafo não encontrado' };
+  const description = `${formatCount(photographer.photoCount)} fotos publicadas no acervo do Revela.`;
+
   return {
-    title: `${photographer.name} — Revela`,
-    description: `${formatCount(photographer.photoCount)} fotos publicadas no acervo do Revela.`,
+    title: photographer.name,
+    description,
+    openGraph: {
+      title: photographer.name,
+      description,
+      type: 'profile',
+      images: [{ url: photographer.coverPhotoUrl, width: 800, height: 600 }],
+    },
   };
 }
 
@@ -41,7 +50,7 @@ export default async function PhotographerPage({
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="flex-1">
+      <main id="conteudo" className="flex-1">
         {/* Capa: um trabalho recente, como no card que trouxe a pessoa até aqui. */}
         <div className="relative h-[220px] bg-prussia-950 sm:h-[300px]">
           <Image
@@ -134,6 +143,7 @@ export default async function PhotographerPage({
           </section>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

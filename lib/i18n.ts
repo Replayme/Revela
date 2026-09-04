@@ -23,15 +23,15 @@ const pt = {
   'brand.name': 'Revela',
   'brand.tagline': 'Marketplace de fotógrafos',
 
-  'header.search': 'Buscar por fotógrafo, ensaio, cidade ou coleção',
+  'header.search': 'Buscar por foto, fotógrafo ou categoria',
   'header.searchLabel': 'Buscar no acervo',
   'header.searchAction': 'Buscar',
   'header.nav.explore': 'Explorar',
-  'header.nav.photographers': 'Fotógrafos',
-  'header.nav.collections': 'Coleções',
-  'header.nav.pricing': 'Planos',
+  'header.nav.categories': 'Categorias',
+  'header.nav.license': 'A licença',
   'header.nav.sell': 'Vender fotos',
   'header.signin': 'Entrar',
+  'header.account': 'Minha conta',
   'header.signup': 'Criar conta',
   'header.language': 'Idioma',
 
@@ -39,9 +39,9 @@ const pt = {
   'aside.headline': 'Cada foto sua tem um preço. Aqui ele é seu.',
   'aside.body':
     'Publique ensaios, defina a licença e receba direto — sem intermediário decidindo quanto vale o seu trabalho.',
-  'aside.stat1': 'fotógrafos ativos',
-  'aside.stat2': 'fotos no acervo',
-  'aside.stat3': 'de repasse ao autor',
+  'aside.stat1': 'licença, para todo uso',
+  'aside.stat2': 'sem prazo de validade',
+  'aside.stat3': 'de comissão sobre o cachê',
 
   'login.eyebrow': 'Acesso à conta',
   'login.title': 'Entrar no Revela',
@@ -146,9 +146,6 @@ const pt = {
   'reset.goLogin': 'Ir para o login',
   'reset.missingToken': 'Link sem token. Solicite uma nova redefinição.',
 
-  'dashboard.title': 'Painel do fotógrafo',
-  'dashboard.body':
-    'Você chegou aqui pelo redirecionamento automático após o login.',
   'dashboard.logout': 'Sair',
 
   'a11y.loading': 'Carregando',
@@ -162,15 +159,15 @@ const en: Record<MessageKey, string> = {
   'brand.name': 'Revela',
   'brand.tagline': 'Photographer marketplace',
 
-  'header.search': 'Search photographers, shoots, cities or collections',
+  'header.search': 'Search photos, photographers or categories',
   'header.searchLabel': 'Search the archive',
   'header.searchAction': 'Search',
   'header.nav.explore': 'Explore',
-  'header.nav.photographers': 'Photographers',
-  'header.nav.collections': 'Collections',
-  'header.nav.pricing': 'Pricing',
+  'header.nav.categories': 'Categories',
+  'header.nav.license': 'The licence',
   'header.nav.sell': 'Sell photos',
   'header.signin': 'Sign in',
+  'header.account': 'My account',
   'header.signup': 'Create account',
   'header.language': 'Language',
 
@@ -178,9 +175,9 @@ const en: Record<MessageKey, string> = {
   'aside.headline': 'Every photo of yours has a price. Here it is yours.',
   'aside.body':
     'Publish shoots, set the licence and get paid directly — with no middleman deciding what your work is worth.',
-  'aside.stat1': 'active photographers',
-  'aside.stat2': 'photos in the archive',
-  'aside.stat3': 'paid to the author',
+  'aside.stat1': 'licence, for every use',
+  'aside.stat2': 'no expiry date',
+  'aside.stat3': 'commission on the fee',
 
   'login.eyebrow': 'Account access',
   'login.title': 'Sign in to Revela',
@@ -282,8 +279,6 @@ const en: Record<MessageKey, string> = {
   'reset.goLogin': 'Go to sign in',
   'reset.missingToken': 'Link has no token. Request a new reset.',
 
-  'dashboard.title': 'Photographer dashboard',
-  'dashboard.body': 'You landed here through the automatic redirect after sign in.',
   'dashboard.logout': 'Sign out',
 
   'a11y.loading': 'Loading',

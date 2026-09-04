@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { IconCheck, IconAlert } from '@/components/icons';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 
 export const metadata = {
-  title: 'Licença Revela',
+  title: 'A licença',
 };
 
 /**
@@ -19,7 +20,7 @@ export default function LicensePage() {
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="flex-1">
+      <main id="conteudo" className="flex-1">
         <div className="mx-auto w-full max-w-[760px] px-5 py-14 sm:px-8 sm:py-20">
           <p className="font-mono text-[10px] tracking-[0.24em] text-paper-500 uppercase">
             {license.name} · v{license.version} · {license.updatedAt}
@@ -99,6 +100,7 @@ export default function LicensePage() {
           </p>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

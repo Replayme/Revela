@@ -2,14 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
+import { useSession } from '@/components/session-provider';
+import { useFavorites } from '@/components/use-favorites';
+import { SiteFooter } from '@/components/site-footer';
 import { PhotoGrid } from '@/components/photo-grid';
 import { CategoryGrid } from '@/components/category-grid';
 import { PhotographerGrid } from '@/components/photographer-grid';
 import { ValueSection } from '@/components/value-section';
 import { mockPhotos, type Photo } from '@/lib/mock-photos';
 import { mockCategories } from '@/lib/mock-categories';
-import { mockPhotographers } from '@/lib/mock-photographers';
+import { findPhotographer, mockPhotographers } from '@/lib/mock-photographers';
 import styles from './page.module.css';
 
 const PERFIS = [
@@ -20,47 +24,16 @@ const PERFIS = [
   { slug: 'leticia-sa', nome: 'Letícia Sá', cidade: 'Fortaleza' },
 ];
 
-const CATEGORIAS = [
-  { slug: 'casamento', nome: 'Casamento', total: '412 profissionais' },
-  { slug: 'familia', nome: 'Família e infantil', total: '287 profissionais' },
-  { slug: 'retrato', nome: 'Retrato', total: '354 profissionais' },
-  { slug: 'produto', nome: 'Produto e e-commerce', total: '163 profissionais' },
-  { slug: 'gastronomia', nome: 'Gastronomia', total: '91 profissionais' },
-  { slug: 'imoveis', nome: 'Arquitetura e imóveis', total: '128 profissionais' },
-  { slug: 'eventos', nome: 'Eventos corporativos', total: '205 profissionais' },
-  { slug: 'documental', nome: 'Documental e rua', total: '77 profissionais' },
-];
-
-const POSTS = [
-  {
-    slug: 'luz-de-janela',
-    data: '28 ago · 6 min',
-    titulo: 'Luz de janela: como usar a única fonte que você já tem',
-    resumo:
-      'Distância, ângulo e um pedaço de papel branco resolvem quase todo ensaio dentro de casa.',
-  },
-  {
-    slug: 'perguntas-antes-do-ensaio',
-    data: '21 ago · 4 min',
-    titulo: 'Sete perguntas para fazer ao cliente antes do ensaio',
-    resumo:
-      'A maior parte das reclamações depois da entrega começa numa conversa que não aconteceu.',
-  },
-  {
-    slug: 'montar-pacote',
-    data: '14 ago · 9 min',
-    titulo: 'Por hora ou por entrega? Como montar seu pacote',
-    resumo:
-      'Duas formas de cobrar, com planilha de custo por foto tratada para você adaptar.',
-  },
-];
-
 /**
  * Home do Revela — marketplace de fotógrafos. Substitui o placeholder
  * anterior (adaptado do mockup revela.html enviado para o projeto).
  */
 export default function HomePage() {
   const router = useRouter();
+  const sessao = useSession();
+  // O favorito é do usuário, não da cópia local do catálogo: alternar aqui
+  // pintava o coração e perdia tudo no reload.
+  const { favorites, toggle: alternarFavorita } = useFavorites();
   const [menuAberto, setMenuAberto] = useState(false);
   const [busca, setBusca] = useState('');
 
@@ -72,14 +45,6 @@ export default function HomePage() {
     const id = setTimeout(() => setFotos(mockPhotos), 800);
     return () => clearTimeout(id);
   }, []);
-
-  function alternarFavorita(fotoId: string) {
-    setFotos((atual) =>
-      atual?.map((foto) =>
-        foto.id === fotoId ? { ...foto, isFavorited: !foto.isFavorited } : foto,
-      ) ?? atual,
-    );
-  }
 
   function buscar(event: React.FormEvent) {
     event.preventDefault();
@@ -135,13 +100,24 @@ export default function HomePage() {
               <button type="submit">Buscar</button>
             </form>
 
+            {/* A home tem header próprio (CSS module), separado do
+                `SiteHeader` do resto do site — mas quem já entrou precisa
+                achar a conta a partir daqui também. */}
             <div className={styles.acessos}>
-              <Link className={styles.entrar} href="/login">
-                Entrar
-              </Link>
-              <Link className={styles.cta} href="/cadastro-fotografo">
-                Cadastre-se como fotógrafo
-              </Link>
+              {sessao ? (
+                <Link className={styles.cta} href="/dashboard">
+                  Minha conta
+                </Link>
+              ) : (
+                <>
+                  <Link className={styles.entrar} href="/login">
+                    Entrar
+                  </Link>
+                  <Link className={styles.cta} href="/cadastro-fotografo">
+                    Cadastre-se como fotógrafo
+                  </Link>
+                </>
+              )}
               <button
                 className={styles.abrirMenu}
                 aria-expanded={menuAberto}
@@ -166,25 +142,34 @@ export default function HomePage() {
                   Explorar
                 </Link>
               </li>
+              {/* Âncoras, não rotas: as duas seções são desta página. Antes
+                  eram links para /categorias e /sobre, que nunca existiram. */}
               <li>
-                <Link href="/categorias">Categorias</Link>
+                <Link href="/#categorias">Categorias</Link>
               </li>
               <li>
-                <Link href="/sobre">Sobre</Link>
-              </li>
-              <li>
-                <Link href="/blog">Blog</Link> <span className={styles.dica}>dicas de fotografia</span>
+                <Link href="/#sobre">Sobre</Link>
               </li>
               {/* No celular o header esconde o "Entrar"; sem esta entrada quem
                   já tem conta não teria como fazer login pela home. */}
-              <li className={styles.entrarMovel}>
-                <Link href="/login">Entrar</Link>
-              </li>
-              <li>
-                <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/cadastro-fotografo">
-                  Cadastre-se como fotógrafo
-                </Link>
-              </li>
+              {sessao ? (
+                <li>
+                  <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/dashboard">
+                    Minha conta
+                  </Link>
+                </li>
+              ) : (
+                <>
+                  <li className={styles.entrarMovel}>
+                    <Link href="/login">Entrar</Link>
+                  </li>
+                  <li>
+                    <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/cadastro-fotografo">
+                      Cadastre-se como fotógrafo
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
         </nav>
@@ -200,10 +185,10 @@ export default function HomePage() {
             </p>
             <div className={styles.atalhos}>
               <span>Buscas frequentes:</span>
-              <Link href="/explorar?t=casamento">casamento</Link>
-              <Link href="/explorar?t=gestante">gestante</Link>
-              <Link href="/explorar?t=produto">produto para loja</Link>
-              <Link href="/explorar?t=formatura">formatura</Link>
+              <Link href="/explorar?termo=casamento">casamento</Link>
+              <Link href="/explorar?termo=gestante">gestante</Link>
+              <Link href="/explorar?termo=produto">produto para loja</Link>
+              <Link href="/explorar?termo=retrato">retrato</Link>
             </div>
 
             <div className={styles.perfuracao} aria-hidden="true">
@@ -212,15 +197,30 @@ export default function HomePage() {
               ))}
             </div>
             <div className={styles.filme}>
-              {PERFIS.map((perfil) => (
-                <Link key={perfil.slug} className={styles.quadro} href={`/perfil/${perfil.slug}`}>
-                  <div className={styles.imagem} />
-                  <div className={styles.rotulo}>
-                    <b>{perfil.nome}</b>
-                    <em>{perfil.cidade}</em>
-                  </div>
-                </Link>
-              ))}
+              {PERFIS.map((perfil) => {
+                // A moldura já tinha o degradê de multiply por cima; faltava a
+                // foto embaixo dele. "Compare portfólios" pede portfólio à vista.
+                const capa = findPhotographer(perfil.slug)?.coverPhotoUrl;
+                return (
+                  <Link key={perfil.slug} className={styles.quadro} href={`/perfil/${perfil.slug}`}>
+                    <div className={styles.imagem}>
+                      {capa && (
+                        <Image
+                          src={capa}
+                          alt=""
+                          fill
+                          sizes="240px"
+                          className="object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className={styles.rotulo}>
+                      <b>{perfil.nome}</b>
+                      <em>{perfil.cidade}</em>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -234,6 +234,7 @@ export default function HomePage() {
             <PhotoGrid
               photos={fotos ?? []}
               loading={fotos === null}
+              favorites={favorites}
               onToggleFavorite={alternarFavorita}
             />
           </div>
@@ -255,41 +256,36 @@ export default function HomePage() {
             o próprio contêiner interno. */}
         <ValueSection />
 
-        <section className={styles.bloco}>
+        <section className={styles.bloco} id="categorias">
           <div className={styles.wrap}>
             <h2 className={styles.titulo}>Categorias</h2>
             <p className={styles.sub}>
-              Cada fotógrafo escolhe até três especialidades. É por elas que a busca ordena os
-              resultados.
+              Cada foto entra numa especialidade. Clicar aqui abre o acervo já
+              filtrado por ela.
             </p>
+            {/* A lista vem de `mockCategories`, que é derivada das próprias
+                fotos: toda categoria oferecida tem resultado. A lista escrita
+                à mão que estava aqui levava para /categorias/{slug}, uma rota
+                que nunca existiu. */}
             <div className={styles.categorias}>
-              {CATEGORIAS.map((categoria) => (
-                <Link key={categoria.slug} href={`/categorias/${categoria.slug}`}>
-                  <strong>{categoria.nome}</strong>
-                  <em>{categoria.total}</em>
+              {mockCategories.map((categoria) => (
+                <Link
+                  key={categoria.slug}
+                  href={`/explorar?categoria=${categoria.slug}`}
+                >
+                  <strong>{categoria.name}</strong>
+                  <em>
+                    {categoria.photoCount}{' '}
+                    {categoria.photoCount === 1 ? 'foto' : 'fotos'}
+                  </em>
                 </Link>
               ))}
             </div>
           </div>
         </section>
 
-        <section className={styles.bloco}>
-          <div className={styles.wrap}>
-            <h2 className={styles.titulo}>Do blog</h2>
-            <p className={styles.sub}>Textos práticos para quem fotografa e para quem vai contratar.</p>
-            <div className={styles.posts}>
-              {POSTS.map((post) => (
-                <Link key={post.slug} className={styles.post} href={`/blog/${post.slug}`}>
-                  <span className={styles.marcaTempo}>{post.data}</span>
-                  <h3>{post.titulo}</h3>
-                  <p>{post.resumo}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        <section className={styles.bloco}>
+        <section className={styles.bloco} id="sobre">
           <div className={`${styles.wrap} ${styles.sobre}`}>
             <div>
               <h2 className={styles.titulo}>Sobre</h2>
@@ -300,14 +296,20 @@ export default function HomePage() {
               </p>
               <p>Não cobramos comissão sobre o trabalho entregue.</p>
             </div>
+            {/* Aqui havia "1.940 fotógrafos" e "214 cidades" — números que
+                ninguém mediu, num site que ainda roda com catorze fotos de
+                demonstração. Trocados por afirmações que o próprio código
+                sustenta: a licença única de `lib/license.ts` e a política de
+                comissão do parágrafo ao lado. Quando houver número real
+                medido, ele volta. */}
             <div className={styles.numeros}>
               <div>
-                <b>1.940</b>
-                <span>fotógrafos com portfólio publicado</span>
+                <b>Uma</b>
+                <span>licença para todo uso, sem faixa por finalidade</span>
               </div>
               <div>
-                <b>214</b>
-                <span>cidades atendidas</span>
+                <b>Sempre</b>
+                <span>a licença comprada não expira</span>
               </div>
               <div>
                 <b>0%</b>
@@ -318,71 +320,7 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className={styles.footer}>
-        <div className={styles.wrap}>
-          <div className={styles.rodape}>
-            <div>
-              <h4>Navegar</h4>
-              <ul>
-                <li>
-                  <Link href="/explorar">Explorar</Link>
-                </li>
-                <li>
-                  <Link href="/categorias">Categorias</Link>
-                </li>
-                <li>
-                  <Link href="/blog">Blog</Link>
-                </li>
-                <li>
-                  <Link href="/sobre">Sobre</Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4>Para fotógrafos</h4>
-              <ul>
-                <li>
-                  <Link href="/cadastro-fotografo">Criar perfil</Link>
-                </li>
-                <li>
-                  <Link href="/precos">Planos</Link>
-                </li>
-                <li>
-                  <Link href="/ajuda">Central de ajuda</Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4>Contato</h4>
-              <ul>
-                <li>
-                  <a href="mailto:oi@revela.com.br">oi@revela.com.br</a>
-                </li>
-                <li>
-                  <Link href="/imprensa">Imprensa</Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4>Legal</h4>
-              <ul>
-                <li>
-                  <Link href="/termos">Termos de uso</Link>
-                </li>
-                <li>
-                  <Link href="/privacidade">Privacidade</Link>
-                </li>
-                <li>
-                  <Link href="/direitos">Direitos de imagem</Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <p className={styles.creditos}>
-            Revela · Natal, RN · As fotos exibidas pertencem aos seus autores.
-          </p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

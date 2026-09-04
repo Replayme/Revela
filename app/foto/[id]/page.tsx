@@ -1,15 +1,16 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { BuyButton } from '@/components/buy-button';
 import { IconCheck, IconStar } from '@/components/icons';
-import { findOrder, verifySessionToken } from '@/lib/mock-db';
+import { findOrder } from '@/lib/mock-db';
 import { findPhoto, mockPhotos, photosByPhotographer } from '@/lib/mock-photos';
 import { findPhotographer } from '@/lib/mock-photographers';
 import { UNIVERSAL_LICENSE, licenseLabel } from '@/lib/license';
-import { formatPrice, formatRating } from '@/lib/format';
+import { currentSession } from '@/lib/session';
+import { formatCount, formatPrice, formatRating } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +25,27 @@ export async function generateMetadata({
 }) {
   const photo = findPhoto((await params).id);
   if (!photo) return { title: 'Foto não encontrada' };
+  const description = `${photo.category} por ${photo.photographer.name}. ${UNIVERSAL_LICENSE.summary}`;
+
   return {
     title: `${photo.title} — ${photo.photographer.name}`,
-    description: `${photo.category} por ${photo.photographer.name}. ${UNIVERSAL_LICENSE.summary}`,
+    description,
+    // A foto é o produto: sem `og:image` o link colado no WhatsApp ou no Slack
+    // vira uma linha de texto, e ninguém clica numa linha de texto para ver
+    // uma foto.
+    openGraph: {
+      title: photo.title,
+      description,
+      type: 'article',
+      images: [
+        {
+          url: photo.thumbnailUrl,
+          width: 800,
+          height: 600,
+          alt: `${photo.title}, por ${photo.photographer.name}`,
+        },
+      ],
+    },
   };
 }
 
@@ -38,9 +57,8 @@ export default async function PhotoPage({
   const photo = findPhoto((await params).id);
   if (!photo) notFound();
 
-  const token = (await cookies()).get('revela_session')?.value;
-  const session = token ? verifySessionToken(token) : null;
-  const alreadyOwned = session ? Boolean(findOrder(session.sub, photo.id)) : false;
+  const session = await currentSession();
+  const pedido = session ? findOrder(session.sub, photo.id) : undefined;
 
   const photographer = findPhotographer(photo.photographer.id);
   const outras = photosByPhotographer(photo.photographer.id).filter(
@@ -51,7 +69,7 @@ export default async function PhotoPage({
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="flex-1">
+      <main id="conteudo" className="flex-1">
         <div className="mx-auto w-full max-w-[1180px] px-5 py-10 sm:px-8 sm:py-14">
           <nav aria-label="Trilha" className="text-xs text-paper-500">
             <Link href="/explorar" className="hover:text-paper">
@@ -108,7 +126,12 @@ export default async function PhotoPage({
                     photo.orientation === 'vertical' ? 'Vertical' : 'Horizontal'
                   }
                 />
-                <Dado rotulo="Resolução" valor="4096 × 2731 px" />
+                {/* Vinha fixo em "4096 × 2731 px": a mesma medida em toda
+                    foto, e de paisagem mesmo nas verticais. */}
+                <Dado
+                  rotulo="Resolução"
+                  valor={`${formatCount(photo.width)} × ${formatCount(photo.height)} px`}
+                />
                 <Dado
                   rotulo="Avaliação"
                   valor={
@@ -133,7 +156,7 @@ export default async function PhotoPage({
                     photoId={photo.id}
                     price={photo.price}
                     isSignedIn={Boolean(session)}
-                    alreadyOwned={alreadyOwned}
+                    orderId={pedido?.id ?? null}
                   />
                 </div>
               </div>
@@ -213,6 +236,7 @@ export default async function PhotoPage({
           )}
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

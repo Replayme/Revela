@@ -13,7 +13,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="tex-contact-sheet flex-1">
+      <main id="conteudo" className="tex-contact-sheet flex-1">
         <div className="mx-auto grid w-full max-w-[1400px] items-center gap-12 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_minmax(0,540px)] lg:gap-20 lg:px-10 lg:py-16">
           <EditorialAside />
           <div className="order-1 w-full lg:order-2">{children}</div>
@@ -34,12 +34,17 @@ export function AuthShell({ children }: { children: ReactNode }) {
 }
 
 function EditorialAside() {
-  const { t, locale } = useLocale();
-  // Números são placeholders — troque pelos reais antes de publicar.
+  const { t } = useLocale();
+  /*
+    Eram "2.400 fotógrafos", "910 mil fotos" e "85% de repasse" — inventados, e
+    o repasse ainda contradizia o "0% de comissão" que a home afirma na mesma
+    voz. No lugar entram três fatos que o código sustenta: a licença única
+    (`lib/license.ts`), a perpetuidade dela e a política de comissão.
+  */
   const stats = {
-    photographers: locale === 'pt' ? '2.400' : '2,400',
-    photos: locale === 'pt' ? '910 mil' : '910k',
-    payout: '85%',
+    license: '1',
+    term: '∞',
+    payout: '0%',
   };
 
   return (
@@ -59,8 +64,8 @@ function EditorialAside() {
       <ContactSheet />
 
       <dl className="mt-8 grid max-w-lg grid-cols-1 gap-px border border-paper/12 bg-paper/12 sm:grid-cols-3">
-        <Stat value={stats.photographers} label={t('aside.stat1')} />
-        <Stat value={stats.photos} label={t('aside.stat2')} />
+        <Stat value={stats.license} label={t('aside.stat1')} />
+        <Stat value={stats.term} label={t('aside.stat2')} />
         <Stat value={stats.payout} label={t('aside.stat3')} />
       </dl>
     </aside>

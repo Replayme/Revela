@@ -1,18 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLocale } from './locale-provider';
+import { useSession } from './session-provider';
 import { LanguageSwitcher } from './language-switcher';
 import { Logo } from './logo';
 import { IconSearch } from './icons';
 import type { MessageKey } from '@/lib/i18n';
 
+/**
+ * Só entram rotas que existem. Quatro dos cinco itens apontavam para `/` —
+ * "Fotógrafos", "Coleções" e "Planos" não têm página, e "Vender fotos" tinha
+ * (o cadastro) mas levava para a home mesmo assim.
+ */
 const NAV: { key: MessageKey; href: string }[] = [
   { key: 'header.nav.explore', href: '/explorar' },
-  { key: 'header.nav.photographers', href: '/' },
-  { key: 'header.nav.collections', href: '/' },
-  { key: 'header.nav.pricing', href: '/' },
-  { key: 'header.nav.sell', href: '/' },
+  { key: 'header.nav.categories', href: '/#categorias' },
+  { key: 'header.nav.license', href: '/licenca' },
+  { key: 'header.nav.sell', href: '/cadastro-fotografo' },
 ];
 
 /**
@@ -28,10 +35,23 @@ const NAV: { key: MessageKey; href: string }[] = [
  */
 export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) {
   const { t } = useLocale();
+  const session = useSession();
+  const router = useRouter();
+  const [termo, setTermo] = useState('');
   const compact = variant === 'auth';
 
   return (
     <header className="relative z-20 border-b border-paper/12 bg-prussia-950/85 backdrop-blur-sm">
+      {/* Primeira parada da tabulação em toda página que usa este header. Fica
+          escondido até receber foco: quem navega com mouse nunca o vê, e quem
+          navega com teclado não precisa atravessar a busca e a navegação
+          inteiras para chegar ao conteúdo. */}
+      <a
+        href="#conteudo"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-amber focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold focus:text-prussia-950"
+      >
+        Pular para o conteúdo
+      </a>
       {/* faixa 1 — busca */}
       <div
         className={`mx-auto flex w-full max-w-[1400px] items-center gap-4 px-4 sm:px-6 lg:px-10 ${
@@ -42,11 +62,21 @@ export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) 
           <Logo size={compact ? 'sm' : 'md'} />
         </div>
 
+        {/* A busca busca. Antes o `onSubmit` só chamava `preventDefault()`:
+            o campo mais visível do site não fazia nada em nenhuma página que
+            não fosse a home. `action` continua apontando para /explorar para
+            funcionar mesmo antes do JS hidratar. */}
         <form
           role="search"
-          action="/"
+          action="/explorar"
           className="flex min-w-0 flex-1 items-stretch"
-          onSubmit={(event) => event.preventDefault()}
+          onSubmit={(event) => {
+            event.preventDefault();
+            const busca = termo.trim();
+            router.push(
+              busca ? `/explorar?termo=${encodeURIComponent(busca)}` : '/explorar',
+            );
+          }}
         >
           <label htmlFor="site-search" className="sr-only">
             {t('header.searchLabel')}
@@ -61,7 +91,10 @@ export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) 
             />
             <input
               id="site-search"
+              name="termo"
               type="search"
+              value={termo}
+              onChange={(event) => setTermo(event.target.value)}
               placeholder={t('header.search')}
               className={`w-full min-w-0 rounded-none border border-paper/20 bg-prussia-900/70 py-2.5 pr-3 pl-10 text-paper placeholder:text-paper-500 focus:border-amber focus:outline-none ${
                 compact
@@ -101,18 +134,36 @@ export function SiteHeader({ variant = 'full' }: { variant?: 'full' | 'auth' }) 
 
           <div className="flex shrink-0 items-center gap-4 py-2">
             <LanguageSwitcher />
-            <Link
-              href="/login"
-              className="hidden text-[11px] font-medium tracking-[0.16em] text-paper-300 uppercase transition-colors hover:text-amber sm:block"
-            >
-              {t('header.signin')}
-            </Link>
-            <Link
-              href="/login"
-              className="border border-amber/60 px-3 py-1.5 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:bg-amber hover:text-prussia-950"
-            >
-              {t('header.signup')}
-            </Link>
+            {session ? (
+              <>
+                {/* O nome some no celular; o que não pode sumir é o caminho
+                    para as licenças — é o que a pessoa comprou. */}
+                <span className="hidden max-w-[16ch] truncate text-[11px] font-medium tracking-[0.16em] text-paper-500 uppercase md:block">
+                  {session.name}
+                </span>
+                <Link
+                  href="/dashboard"
+                  className="border border-amber/60 px-3 py-1.5 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:bg-amber hover:text-prussia-950"
+                >
+                  {t('header.account')}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="hidden text-[11px] font-medium tracking-[0.16em] text-paper-300 uppercase transition-colors hover:text-amber sm:block"
+                >
+                  {t('header.signin')}
+                </Link>
+                <Link
+                  href="/cadastro-fotografo"
+                  className="border border-amber/60 px-3 py-1.5 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:bg-amber hover:text-prussia-950"
+                >
+                  {t('header.signup')}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

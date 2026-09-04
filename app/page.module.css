@@ -40,6 +40,15 @@
   padding: 0 24px;
 }
 
+/*
+  Altura das duas faixas do header (busca + navegação). Serve de
+  `scroll-margin-top` das seções com âncora: sem ela, "Categorias" e "Sobre"
+  levam o título para debaixo do header grudado no topo.
+*/
+.pagina {
+  --altura-header: 142px;
+}
+
 /* ---------- HEADER ---------- */
 .cabecalho {
   position: sticky;
@@ -353,6 +362,7 @@
 .bloco {
   padding: 64px 0;
   border-bottom: 1px solid var(--linha);
+  scroll-margin-top: var(--altura-header);
 }
 
 .titulo {

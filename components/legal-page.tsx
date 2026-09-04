@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/site-header';
+import { SiteFooter } from '@/components/site-footer';
 import { IconAlert } from '@/components/icons';
 
 export interface LegalSection {
@@ -33,7 +34,7 @@ export function LegalPage({
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
       <SiteHeader variant="auth" />
 
-      <main className="flex-1">
+      <main id="conteudo" className="flex-1">
         <div className="mx-auto w-full max-w-[760px] px-5 py-14 sm:px-8 sm:py-20">
           <p className="font-mono text-[10px] tracking-[0.24em] text-paper-500 uppercase">
             {kicker}
@@ -76,6 +77,7 @@ export function LegalPage({
           </p>
         </div>
       </main>
+      <SiteFooter />
     </div>
   );
 }

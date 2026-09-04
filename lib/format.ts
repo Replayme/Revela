@@ -28,3 +28,25 @@ export function formatRating(value: number): string {
 export function formatCount(value: number): string {
   return count.format(value);
 }
+
+const dateLong = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+});
+
+const dateShort = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+});
+
+/** "03 de setembro de 2026" — a data do recibo, por extenso. */
+export function formatDateLong(value: number | Date): string {
+  return dateLong.format(value);
+}
+
+/** "03/09/2026" — a data na lista, onde a linha precisa caber. */
+export function formatDate(value: number | Date): string {
+  return dateShort.format(value);
+}

@@ -1,7 +1,7 @@
 import { LegalLink, LegalPage } from '@/components/legal-page';
 
 export const metadata = {
-  title: 'Política de privacidade — Revela',
+  title: 'Política de privacidade',
   description:
     'Quais dados o Revela guarda, por quanto tempo e o que você pode pedir.',
 };
