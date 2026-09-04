@@ -46,6 +46,25 @@ export function painelDoAutor(email: string): PainelDoAutor | null {
 }
 
 /**
+ * Uma foto **do autor logado**, ou `undefined`.
+ *
+ * A busca parte da lista dele e não do catálogo inteiro: procurar a foto e só
+ * depois comparar o dono dá o mesmo resultado hoje e é o caminho que um dia
+ * esquece de comparar. Quem chama trata o `undefined` como 404, nunca como
+ * 403 — "existe, mas não é sua" já conta quantas fotos o acervo tem e quais
+ * ids são válidos.
+ *
+ * Existe para as telas de editar e de remover não escreverem cada uma a sua
+ * versão desta conferência.
+ */
+export function fotoDoAutor(
+  email: string,
+  photoId: string,
+): PhotographerPhoto | undefined {
+  return painelDoAutor(email)?.photos.find((photo) => photo.id === photoId);
+}
+
+/**
  * As vendas saem dos pedidos de verdade, não de um número guardado na foto.
  *
  * Numa loja sem venda nenhuma isto devolve zero em tudo, e zero é a resposta

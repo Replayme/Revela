@@ -5,8 +5,9 @@ import { SiteFooter } from '@/components/site-footer';
 import { EditPhotoScreen } from '@/components/edit-photo-screen';
 import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft } from '@/components/icons';
-import { painelDoAutor } from '@/lib/mock-photographer-panel';
+import { fotoDoAutor, painelDoAutor } from '@/lib/mock-photographer-panel';
 import { currentSession } from '@/lib/session';
+import type { PhotographerPhoto } from '@/lib/photographer-panel';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,11 +22,8 @@ export const metadata = {
  * **A foto de outro autor responde 404, não 403.** É a mesma regra do recibo em
  * `/pedido/{id}`, e pelo mesmo motivo: "existe, mas não é sua" já conta quantas
  * fotos o acervo tem e quais ids são válidos. Quem não é dono não descobre nem
- * isso.
- *
- * A conferência de posse é feita **a partir da lista do autor**, e não buscando
- * a foto no catálogo para depois comparar o dono. Os dois caminhos dão o mesmo
- * resultado hoje; o segundo é o que um dia esquece a comparação.
+ * isso. A conferência mora em `fotoDoAutor`, e não aqui, para esta tela e a de
+ * remover não terem duas versões dela.
  *
  * Salvar ainda não existe — falta `PATCH /api/fotos/{id}` — e a tela diz isso
  * na entrada. O porquê de dizer antes e não depois está em
@@ -43,7 +41,9 @@ export default async function EditarFotoPage({
     redirect(`/login?next=${encodeURIComponent(`/dashboard/foto/${id}`)}`);
   }
 
-  const painel = painelDoAutor(session.email);
+  const ehAutor = painelDoAutor(session.email) !== null;
+  const photo = ehAutor ? fotoDoAutor(session.email, id) : undefined;
+  if (ehAutor && !photo) notFound();
 
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
@@ -59,7 +59,7 @@ export default async function EditarFotoPage({
             Minhas fotos
           </Link>
 
-          {painel ? <Edicao painel={painel} id={id} /> : <SemAutor />}
+          {photo ? <Edicao photo={photo} /> : <SemAutor />}
         </div>
       </main>
 
@@ -68,16 +68,7 @@ export default async function EditarFotoPage({
   );
 }
 
-function Edicao({
-  painel,
-  id,
-}: {
-  painel: NonNullable<ReturnType<typeof painelDoAutor>>;
-  id: string;
-}) {
-  const photo = painel.photos.find((candidata) => candidata.id === id);
-  if (!photo) notFound();
-
+function Edicao({ photo }: { photo: PhotographerPhoto }) {
   return (
     <>
       <h1 className="mt-5 font-serif text-[clamp(1.9rem,5vw,3rem)] leading-tight font-medium tracking-[-0.02em] text-paper">
@@ -104,6 +95,28 @@ function Edicao({
       </p>
 
       <EditPhotoScreen photo={photo} />
+
+      {/*
+        A saída para tirar do acervo fica no fim e discreta: quem chega aqui
+        veio editar, e uma ação sem volta ao lado do botão de salvar é como se
+        clica na errada com pressa.
+      */}
+      <section className="mt-14 border-t border-paper/12 pt-7">
+        <h2 className="font-mono text-[10px] tracking-[0.24em] text-paper-500 uppercase">
+          Tirar do acervo
+        </h2>
+        <p className="mt-3 max-w-[60ch] leading-relaxed text-paper-300">
+          Despublicar tira a foto da venda e a devolve quando você quiser;
+          remover não tem volta. A{' '}
+          <Link
+            href={`/dashboard/foto/${photo.id}/remover`}
+            className="underline decoration-paper/30 decoration-2 underline-offset-4 transition-colors hover:text-paper hover:decoration-amber"
+          >
+            tela das duas
+          </Link>{' '}
+          explica o que cada uma faz com as licenças já emitidas.
+        </p>
+      </section>
     </>
   );
 }

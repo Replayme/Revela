@@ -175,20 +175,19 @@ function PorVir() {
         Ainda não é possível
       </h2>
       <p className="mt-3 max-w-[60ch] leading-relaxed text-paper-300">
-        Publicar de fato, salvar uma edição, despublicar ou remover. As telas
-        de{' '}
+        As telas de{' '}
         <Link
           href="/dashboard/nova-foto"
           className="underline decoration-paper/30 decoration-2 underline-offset-4 transition-colors hover:text-paper hover:decoration-amber"
         >
           enviar
-        </Link>{' '}
-        e de editar já existem e conferem tudo, mas param no último passo:
-        faltam <code className="font-mono text-paper-400">POST /api/fotos</code>{' '}
-        e <code className="font-mono text-paper-400">PATCH /api/fotos/{'{id}'}</code>{' '}
-        — e, para o envio, o lugar onde guardar o arquivo. Remover depende ainda
-        de decidir o que acontece com as licenças já emitidas: elas continuam
-        valendo, e é isso que torna remover diferente de apagar.
+        </Link>
+        , editar e tirar do acervo existem e conferem tudo — mas todas param no
+        último passo. Faltam{' '}
+        <code className="font-mono text-paper-400">POST /api/fotos</code>,{' '}
+        <code className="font-mono text-paper-400">PATCH /api/fotos/{'{id}'}</code>{' '}
+        e <code className="font-mono text-paper-400">DELETE /api/fotos/{'{id}'}</code>{' '}
+        — e, para o envio, o lugar onde guardar o arquivo.
       </p>
       <p className="mt-3 max-w-[60ch] leading-relaxed text-paper-300">
         Até lá o painel mostra o que dá para conferir, e não oferece botão sem
