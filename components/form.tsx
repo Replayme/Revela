@@ -13,6 +13,34 @@ import { scorePassword } from '@/lib/validation';
 
 /* ------------------------------- campo base ------------------------------- */
 
+/**
+ * Em que fundo o campo está.
+ *
+ * As telas de acesso são um cartão claro; o painel da conta é fundo prussiano.
+ * O campo é o mesmo — mesma marcação, mesmo `aria`, mesmo espaço reservado
+ * para a mensagem — e só a paleta muda. Uma segunda cópia do campo para o
+ * painel divergiria desta no dia em que uma delas ganhasse um conserto de
+ * acessibilidade.
+ */
+type Tone = 'light' | 'dark';
+
+const TONE = {
+  light: {
+    label: 'text-prussia-600',
+    shell: 'bg-paper-50',
+    idle: 'border-prussia-800/25 focus-within:border-prussia-700',
+    input: 'text-prussia-900 placeholder:text-paper-400',
+    hint: 'text-prussia-600/80',
+  },
+  dark: {
+    label: 'text-paper-500',
+    shell: 'bg-prussia-900/70',
+    idle: 'border-paper/20 focus-within:border-amber',
+    input: 'text-paper placeholder:text-paper-500',
+    hint: 'text-paper-400',
+  },
+} as const satisfies Record<Tone, Record<string, string>>;
+
 interface BaseFieldProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'className'> {
   label: string;
@@ -22,6 +50,7 @@ interface BaseFieldProps
   success?: string | null;
   hint?: string;
   trailing?: ReactNode;
+  tone?: Tone;
   /** React 19 aceita `ref` como prop normal em componentes de função. */
   ref?: Ref<HTMLInputElement>;
 }
@@ -32,6 +61,7 @@ export function TextField({
   success,
   hint,
   trailing,
+  tone = 'light',
   id,
   ...inputProps
 }: BaseFieldProps) {
@@ -39,6 +69,7 @@ export function TextField({
   const fieldId = id ?? generatedId;
   const messageId = `${fieldId}-message`;
   const hintId = `${fieldId}-hint`;
+  const palette = TONE[tone];
 
   const state = error ? 'error' : success ? 'ok' : 'idle';
 
@@ -47,25 +78,25 @@ export function TextField({
       ? 'border-signal-error'
       : state === 'ok'
         ? 'border-signal-ok/70'
-        : 'border-prussia-800/25 focus-within:border-prussia-700';
+        : palette.idle;
 
   return (
     <div>
       <label
         htmlFor={fieldId}
-        className="mb-1.5 block text-[11px] font-semibold tracking-[0.16em] text-prussia-600 uppercase"
+        className={`mb-1.5 block text-[11px] font-semibold tracking-[0.16em] uppercase ${palette.label}`}
       >
         {label}
       </label>
 
       <div
-        className={`flex items-stretch border bg-paper-50 transition-colors ${border}`}
+        className={`flex items-stretch border transition-colors ${palette.shell} ${border}`}
       >
         <input
           id={fieldId}
           aria-invalid={state === 'error'}
           aria-describedby={`${messageId}${hint ? ` ${hintId}` : ''}`}
-          className="min-w-0 flex-1 bg-transparent px-3.5 py-3 text-base text-prussia-900 placeholder:text-paper-400 focus:outline-none disabled:opacity-60"
+          className={`min-w-0 flex-1 bg-transparent px-3.5 py-3 text-base focus:outline-none disabled:opacity-60 ${palette.input}`}
           {...inputProps}
         />
 
@@ -81,7 +112,7 @@ export function TextField({
       </div>
 
       {hint && (
-        <p id={hintId} className="mt-1.5 text-xs text-prussia-600/80">
+        <p id={hintId} className={`mt-1.5 text-xs ${palette.hint}`}>
           {hint}
         </p>
       )}

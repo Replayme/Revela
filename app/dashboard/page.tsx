@@ -157,10 +157,17 @@ export default async function DashboardPage() {
               Painel do fotógrafo
             </h2>
             <p className="mt-3 max-w-[56ch] text-paper-300">
-              Publicar fotos, acompanhar vendas e receber o repasse ainda não
-              existem. O lado de quem vende é o próximo passo — hoje o acervo é
-              o de demonstração em <code className="font-mono text-paper-400">lib/mock-photos.ts</code>.
+              O outro lado da conta: as fotos que você publicou e o que cada
+              uma já rendeu. Enviar, editar e despublicar ainda não existem — a
+              tela diz quais e por quê.
             </p>
+            <Link
+              href="/dashboard/minhas-fotos"
+              className="mt-4 inline-flex items-center gap-2 text-[11px] font-semibold tracking-[0.16em] text-amber uppercase transition-colors hover:text-amber-light"
+            >
+              <IconImage width={14} height={14} />
+              Minhas fotos
+            </Link>
           </section>
         </div>
       </main>
