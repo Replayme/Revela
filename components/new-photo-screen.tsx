@@ -10,17 +10,19 @@ import type { Category } from '@/lib/model';
 /**
  * A tela de enviar foto — o formulário e o que acontece quando ele termina.
  *
- * **O envio ainda não tem para onde ir**, e o aviso disso está *antes* do
- * formulário, não depois. Descobrir que o trabalho não vale no momento de
- * apertar o botão é o que transforma uma limitação conhecida em perda de
- * tempo; dito na entrada, o preenchimento vira o que ele de fato é hoje —
- * um ensaio da ficha, com a conferência toda funcionando.
+ * **Falta o último elo, e o aviso disso está *antes* do formulário**, não
+ * depois. Descobrir que o trabalho não vale no momento de apertar o botão é o
+ * que transforma uma limitação conhecida em perda de tempo.
  *
- * Não há gravação nenhuma aqui, nem em memória: uma foto "publicada" cujo
- * arquivo foi descartado apareceria no acervo com a imagem de outra pessoa, e
- * é exatamente esse tipo de mentira que o resto do site recusa. Quando
- * `POST /api/fotos` existir, o que muda é o corpo de `receber` — o formulário
- * já entrega a ficha pronta.
+ * `POST /api/fotos` já existe e grava a ficha. O que não existe é o bucket:
+ * sem ele o navegador não tem para onde mandar o arquivo, e registrar a foto
+ * assim mesmo colocaria no acervo um quadro quebrado com preço — exatamente o
+ * tipo de mentira que o resto do site recusa.
+ *
+ * O que falta ligar aqui é o envio direto do navegador ao Vercel Blob
+ * (`upload()` de `@vercel/blob/client`, autorizado por `/api/fotos/upload`) e,
+ * depois dele, a chamada a `POST /api/fotos` com o caminho de onde o arquivo
+ * ficou. O formulário já entrega a ficha pronta, medidas incluídas.
  */
 export function NewPhotoScreen({ categories }: { categories: Category[] }) {
   const [ficha, setFicha] = useState<PhotoDraft | null>(null);
@@ -58,10 +60,11 @@ function AvisoDeEntrada() {
       <div className="min-w-0 text-sm leading-relaxed text-paper-300">
         <p className="font-semibold text-paper">Esta tela ainda não publica.</p>
         <p className="mt-1.5">
-          Falta <code className="font-mono text-paper-400">POST /api/fotos</code>{' '}
-          e o lugar onde o arquivo vai ser guardado. Até lá o formulário
-          confere tudo — tipo, tamanho, medidas, título e preço — e mostra a
-          ficha que seria enviada, mas nada é gravado.
+          Falta o lugar onde o arquivo vai ser guardado — a rota que grava a
+          ficha (<code className="font-mono text-paper-400">POST /api/fotos</code>)
+          já existe. Até lá o formulário confere tudo — tipo, tamanho, medidas,
+          título e preço — e mostra a ficha que seria enviada, mas nada é
+          gravado.
         </p>
       </div>
     </div>

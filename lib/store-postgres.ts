@@ -558,6 +558,46 @@ export const postgresStore: Store = {
 
   /* --------------------------- painel — escrita ---------------------------- */
 
+  /**
+   * Entra como `publicada` porque não há curadoria: um estado `em-analise`
+   * sem quem analise seria uma fila para lugar nenhum. O padrão da coluna
+   * continua `rascunho` — é o valor seguro para quem inserir sem dizer nada.
+   */
+  async createPhoto(input) {
+    const id = `pho_${randomBytes(8).toString('hex')}`;
+
+    const row = await queryOne<PhotoRow>(
+      `WITH nova AS (
+         INSERT INTO photos
+           (id, photographer_id, title, category, price, width, height,
+            thumbnail_url, full_url, storage_key, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'publicada')
+         RETURNING *
+       )
+       SELECT f.id, f.photographer_id, a.name AS photographer_name, f.title,
+              f.category, f.price, f.rating, f.status, f.width, f.height,
+              f.thumbnail_url, f.full_url, f.created_at, f.updated_at
+         FROM nova f
+         JOIN photographers a ON a.id = f.photographer_id`,
+      [
+        id,
+        input.photographerId,
+        input.title,
+        input.category,
+        input.price,
+        input.width,
+        input.height,
+        input.thumbnailUrl,
+        input.fullUrl,
+        input.storageKey,
+      ],
+    );
+
+    // O INSERT só falha por restrição, e todas elas viram exceção antes daqui.
+    return toPhoto(row!);
+  },
+
+
   async photosOfAuthor(photographerId, options = {}) {
     const rows = await query<PhotoRow>(
       `${PHOTO_SELECT}

@@ -341,6 +341,31 @@ export const memoryStore: Store = {
 
   /* --------------------------- painel — escrita ---------------------------- */
 
+  /** Entra como `publicada` pelo mesmo motivo do Postgres: não há curadoria. */
+  async createPhoto(input) {
+    const autor = store.photographers.find((a) => a.id === input.photographerId);
+
+    const foto: FotoNaMemoria = {
+      id: `pho_${randomBytes(8).toString('hex')}`,
+      title: input.title,
+      photographer: { id: input.photographerId, name: autor?.name ?? '' },
+      price: input.price,
+      rating: 0,
+      thumbnailUrl: input.thumbnailUrl,
+      fullUrl: input.fullUrl,
+      width: input.width,
+      height: input.height,
+      category: input.category,
+      orientation: input.height > input.width ? 'vertical' : 'horizontal',
+      status: 'publicada',
+      createdAt: Date.now(),
+    };
+
+    store.photos.push(foto);
+    return publico(foto);
+  },
+
+
   async photosOfAuthor(photographerId, options = {}) {
     return store.photos
       .filter(

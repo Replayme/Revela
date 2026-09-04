@@ -2,6 +2,7 @@ import { isDatabaseConfigured } from './db';
 import { memoryStore } from './store-memory';
 import type {
   Category,
+  NewPhoto,
   CreateOrderResult,
   CreateUserResult,
   Order,
@@ -17,6 +18,7 @@ import type {
 
 export type {
   Category,
+  NewPhoto,
   CreateOrderResult,
   CreateUserResult,
   Order,
@@ -218,6 +220,11 @@ export async function photosOfAuthor(
   options: { includeRemoved?: boolean } = {},
 ): Promise<StoredPhoto[]> {
   return (await getStore()).photosOfAuthor(photographerId, options);
+}
+
+/** Grava a foto enviada. O autor vem da sessão, nunca do corpo da requisição. */
+export async function createPhoto(input: NewPhoto): Promise<StoredPhoto> {
+  return (await getStore()).createPhoto(input);
 }
 
 /** Edita, já filtrado pelo autor. `undefined` = não é dele (trate como 404). */

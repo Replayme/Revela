@@ -116,6 +116,32 @@ export interface StoredPhoto extends Photo {
   updatedAt?: number;
 }
 
+/**
+ * O que o envio de uma foto grava.
+ *
+ * Não há `status`: quem decide é a rota, e ela decide `publicada`. O padrão da
+ * coluna é `rascunho` para o caso de alguém inserir sem dizer nada — mas a
+ * curadoria não existe, e uma foto que entrasse em `em-analise` esperaria para
+ * sempre por um revisor que não há.
+ *
+ * `thumbnailUrl` e `fullUrl` são as duas caras do mesmo arquivo: a pública, que
+ * o acervo mostra, e a de entrega, que só sai por `/api/pedidos/<id>/arquivo`.
+ * `storageKey` é o caminho do original no bucket — é ele que a URL assinada
+ * resolve, e a presença dele é o que distingue uma foto enviada de uma foto de
+ * demonstração.
+ */
+export interface NewPhoto {
+  photographerId: string;
+  title: string;
+  category: string;
+  price: number;
+  width: number;
+  height: number;
+  thumbnailUrl: string;
+  fullUrl: string;
+  storageKey: string;
+}
+
 /** O que uma edição pode mudar. Campo ausente fica como está. */
 export interface PhotoPatch {
   title?: string;
@@ -238,6 +264,14 @@ export interface Store {
   photographerOfUser(userId: string): Promise<Photographer | undefined>;
 
   /* painel do autor — escrita */
+
+  /**
+   * Grava a foto enviada. O id é gerado aqui, como o de usuário e o de pedido.
+   *
+   * Recebe o autor em vez de confiar num campo do corpo: quem envia não escolhe
+   * de quem é a foto.
+   */
+  createPhoto(input: NewPhoto): Promise<StoredPhoto>;
 
   /**
    * Tudo o que o autor tem no painel: rascunho, em análise e publicada. Só as
