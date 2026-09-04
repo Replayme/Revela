@@ -218,3 +218,47 @@ export function IconDownload(props: IconProps) {
     </svg>
   );
 }
+
+/** A mesma seta do download, virada: o envio do arquivo para o acervo. */
+export function IconUpload(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M8 10.4V2.2" />
+      <path d="M4.7 5.5 8 2.2l3.3 3.3" />
+      <path d="M2.6 12.6h10.8" />
+    </svg>
+  );
+}
+
+/** Lápis: editar a ficha da foto já publicada. */
+export function IconPencil(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M11.1 2.4a1.6 1.6 0 0 1 2.3 2.3l-7.5 7.5-3 .7.7-3 7.5-7.5Z" />
+      <path d="m10 3.5 2.5 2.5" />
+    </svg>
+  );
+}
+
+/** Lixeira: tirar a foto do acervo. */
+export function IconTrash(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M2.6 4.3h10.8" />
+      <path d="M6.2 4.3V3.1a1 1 0 0 1 1-1h1.6a1 1 0 0 1 1 1v1.2" />
+      <path d="M4 4.3v8.6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.3" />
+      <path d="M6.7 7v4" />
+      <path d="M9.3 7v4" />
+    </svg>
+  );
+}
+
+/** Etiqueta de preço: o valor do arquivo na ficha do painel. */
+export function IconTag(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M8.2 1.9H2.4a.5.5 0 0 0-.5.5v5.8c0 .13.05.26.15.35l5.7 5.7a.5.5 0 0 0 .7 0l5.5-5.5a.5.5 0 0 0 0-.7l-5.7-5.7a.5.5 0 0 0-.35-.15Z" />
+      <circle cx="5.1" cy="5.1" r="1" />
+    </svg>
+  );
+}
