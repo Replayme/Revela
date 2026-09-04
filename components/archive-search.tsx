@@ -210,7 +210,7 @@ function Filtros({
   aoLimpar: () => void;
 }) {
   return (
-    <details className="group border border-paper/12 lg:border-0 [&>summary]:lg:hidden [&:not([open])>div]:lg:block">
+    <details className="group border border-paper/12 lg:border-0 [&>summary]:lg:hidden [&:not([open])>div]:lg:block lg:[&::details-content]:[content-visibility:visible]">
       <summary className="cursor-pointer list-none px-4 py-3 text-[11px] font-semibold tracking-[0.16em] text-paper uppercase marker:content-none">
         Filtros
         <span aria-hidden className="float-right text-paper-500 group-open:hidden">
