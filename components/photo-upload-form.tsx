@@ -11,7 +11,7 @@ import {
 import Image from 'next/image';
 import { Alert, SubmitButton, TextField } from './form';
 import { IconImage, IconUpload } from './icons';
-import { mockCategories } from '@/lib/mock-categories';
+import type { Category } from '@/lib/model';
 import { formatFileSize, formatPrice } from '@/lib/format';
 
 /**
@@ -69,11 +69,20 @@ interface Selecao {
 }
 
 export function PhotoUploadForm({
+  categories,
   initial,
   submitLabel = 'Publicar foto',
   onSubmit,
   onCancel,
 }: {
+  /**
+   * As categorias oferecidas, derivadas do acervo e buscadas pela página.
+   *
+   * Vinham de um array importado; passaram a prop quando o acervo virou
+   * tabela. Elas podem chegar vazias — num acervo em que ninguém publicou
+   * ainda não há categoria nenhuma —, e o `select` abaixo lida com isso.
+   */
+  categories: Category[];
   /** Preenche o formulário para edição. Ausente, é uma foto nova. */
   initial?: Partial<Pick<PhotoDraft, 'title' | 'category' | 'price'>> & {
     thumbnailUrl?: string;
@@ -88,7 +97,7 @@ export function PhotoUploadForm({
 
   const [titulo, setTitulo] = useState(initial?.title ?? '');
   const [categoria, setCategoria] = useState(
-    initial?.category ?? mockCategories[0]?.name ?? '',
+    initial?.category ?? categories[0]?.name ?? '',
   );
   // `toFixed(2)` e não `String(price)`: 89.9 chegaria ao campo como "89,9",
   // e um campo de dinheiro que abre com um centavo faltando parece defeito de
@@ -277,7 +286,7 @@ export function PhotoUploadForm({
             onChange={(event) => setCategoria(event.target.value)}
             className="w-full rounded-none border border-paper/20 bg-prussia-900/70 px-3.5 py-3 text-base text-paper focus:border-amber focus:outline-none"
           >
-            {mockCategories.map((item) => (
+            {categories.map((item) => (
               <option key={item.slug} value={item.name}>
                 {item.name}
               </option>

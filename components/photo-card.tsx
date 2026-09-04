@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FilmFrame } from './film-frame';
 import { IconHeart, IconHeartFilled, IconStar } from './icons';
 import { formatPrice, formatRating } from '@/lib/format';
-import type { Photo } from '@/lib/mock-photos';
+import type { Photo } from '@/lib/model';
 
 /** Quatro colunas no desktop, uma no celular — o navegador escolhe o corte. */
 const SIZES =

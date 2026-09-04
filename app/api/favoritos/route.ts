@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { favoritesByUser, toggleFavorite } from '@/lib/repository';
-import { findPhoto } from '@/lib/mock-photos';
+import { findPhoto } from '@/lib/repository';
 import { currentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
   }
 
   const photoId = typeof body.photoId === 'string' ? body.photoId : '';
-  if (!findPhoto(photoId)) {
+  if (!(await findPhoto(photoId))) {
     return NextResponse.json({ error: 'PHOTO_NOT_FOUND' }, { status: 404 });
   }
 

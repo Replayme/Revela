@@ -5,7 +5,9 @@ import { SiteFooter } from '@/components/site-footer';
 import { EditPhotoScreen } from '@/components/edit-photo-screen';
 import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft } from '@/components/icons';
-import { fotoDoAutor, painelDoAutor } from '@/lib/mock-photographer-panel';
+import { fotoDoAutor, painelDoAutor } from '@/lib/photographer-panel-data';
+import { listCategories } from '@/lib/repository';
+import type { Category } from '@/lib/model';
 import { currentSession } from '@/lib/session';
 import type { PhotographerPhoto } from '@/lib/photographer-panel';
 
@@ -41,7 +43,10 @@ export default async function EditarFotoPage({
     redirect(`/login?next=${encodeURIComponent(`/dashboard/foto/${id}`)}`);
   }
 
-  const painel = await painelDoAutor(session.email);
+  const [painel, categories] = await Promise.all([
+    painelDoAutor(session.sub),
+    listCategories(),
+  ]);
   const ehAutor = painel !== null;
   const photo = fotoDoAutor(painel, id);
   if (ehAutor && !photo) notFound();
@@ -60,7 +65,7 @@ export default async function EditarFotoPage({
             Minhas fotos
           </Link>
 
-          {photo ? <Edicao photo={photo} /> : <SemAutor />}
+          {photo ? <Edicao photo={photo} categories={categories} /> : <SemAutor />}
         </div>
       </main>
 
@@ -69,7 +74,13 @@ export default async function EditarFotoPage({
   );
 }
 
-function Edicao({ photo }: { photo: PhotographerPhoto }) {
+function Edicao({
+  photo,
+  categories,
+}: {
+  photo: PhotographerPhoto;
+  categories: Category[];
+}) {
   return (
     <>
       <h1 className="mt-5 font-serif text-[clamp(1.9rem,5vw,3rem)] leading-tight font-medium tracking-[-0.02em] text-paper">
@@ -95,7 +106,7 @@ function Edicao({ photo }: { photo: PhotographerPhoto }) {
         .
       </p>
 
-      <EditPhotoScreen photo={photo} />
+      <EditPhotoScreen photo={photo} categories={categories} />
 
       {/*
         A saída para tirar do acervo fica no fim e discreta: quem chega aqui

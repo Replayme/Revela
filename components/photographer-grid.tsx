@@ -2,7 +2,7 @@ import {
   PhotographerCard,
   PhotographerCardSkeleton,
 } from './photographer-card';
-import type { Photographer } from '@/lib/mock-photographers';
+import type { Photographer } from '@/lib/model';
 
 // Mesmo gap do PhotoGrid e do CategoryGrid: as seções da home batem o ritmo.
 // Seis fotógrafos fecham duas linhas de três no desktop.

@@ -5,8 +5,7 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { LogoutButton } from '@/components/logout-button';
 import { IconDownload, IconImage, IconLicense } from '@/components/icons';
-import { ordersByUser } from '@/lib/repository';
-import { findPhoto } from '@/lib/mock-photos';
+import { findSoldPhoto, ordersByUser } from '@/lib/repository';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 import { currentSession } from '@/lib/session';
 import { formatDate, formatPrice } from '@/lib/format';
@@ -36,10 +35,12 @@ export default async function DashboardPage() {
 
   // Um pedido cuja foto saiu do acervo não some da lista: a licença é
   // perpétua, e o que foi comprado continua sendo da pessoa.
-  const orders = (await ordersByUser(session.sub)).map((order) => ({
-    order,
-    photo: findPhoto(order.photoId),
-  }));
+  const orders = await Promise.all(
+    (await ordersByUser(session.sub)).map(async (order) => ({
+      order,
+      photo: await findSoldPhoto(order.photoId),
+    })),
+  );
 
   const totalPago = orders.reduce((soma, item) => soma + item.order.pricePaid, 0);
 

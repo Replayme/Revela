@@ -1,15 +1,33 @@
 import { isDatabaseConfigured } from './db';
 import { memoryStore } from './store-memory';
 import type {
+  Category,
   CreateOrderResult,
   CreateUserResult,
   Order,
+  Photo,
+  Photographer,
+  PhotoPatch,
+  PhotoStatus,
   ResetCheck,
   Store,
+  StoredPhoto,
   User,
 } from './model';
 
-export type { CreateOrderResult, CreateUserResult, Order, ResetCheck, User };
+export type {
+  Category,
+  CreateOrderResult,
+  CreateUserResult,
+  Order,
+  Photo,
+  Photographer,
+  PhotoPatch,
+  PhotoStatus,
+  ResetCheck,
+  StoredPhoto,
+  User,
+};
 
 /**
  * A porta única de entrada para os dados.
@@ -112,9 +130,16 @@ export async function findOrderById(
   return (await getStore()).findOrderById(userId, orderId);
 }
 
-/** ⚠️ Não filtrado por dono — leia o comentário na implementação antes de usar. */
-export async function ordersByPhoto(photoId: string): Promise<Order[]> {
-  return (await getStore()).ordersByPhoto(photoId);
+/** As licenças emitidas das fotos de um autor, da mais recente para a mais antiga. */
+export async function ordersByAuthor(photographerId: string): Promise<Order[]> {
+  return (await getStore()).ordersByAuthor(photographerId);
+}
+
+/** Vendas e receita por foto do autor, num `GROUP BY`. Foto sem venda não aparece. */
+export async function salesByAuthor(
+  photographerId: string,
+): Promise<Record<string, { sales: number; revenue: number }>> {
+  return (await getStore()).salesByAuthor(photographerId);
 }
 
 /* ------------------------------- favoritos ------------------------------- */
@@ -136,4 +161,75 @@ export async function toggleFavorite(
   photoId: string,
 ): Promise<boolean> {
   return (await getStore()).toggleFavorite(userId, photoId);
+}
+
+/* -------------------------------- acervo --------------------------------- */
+
+/** O acervo publicado. Sem `category`, o acervo inteiro. */
+export async function listPhotos(options: { category?: string } = {}): Promise<StoredPhoto[]> {
+  return (await getStore()).listPhotos(options);
+}
+
+/** Uma foto **do acervo**. Rascunho e removida respondem `undefined`. */
+export async function findPhoto(photoId: string): Promise<StoredPhoto | undefined> {
+  return (await getStore()).findPhoto(photoId);
+}
+
+/**
+ * A mesma foto em qualquer estado, para o recibo de quem já comprou.
+ * ⚠️ Nunca use numa tela pública — leia o contrato em `lib/model.ts`.
+ */
+export async function findSoldPhoto(photoId: string): Promise<StoredPhoto | undefined> {
+  return (await getStore()).findSoldPhoto(photoId);
+}
+
+export async function photosByPhotographer(photographerId: string): Promise<StoredPhoto[]> {
+  return (await getStore()).photosByPhotographer(photographerId);
+}
+
+export async function listCategories(): Promise<Category[]> {
+  return (await getStore()).listCategories();
+}
+
+/* -------------------------------- autores -------------------------------- */
+
+export async function findPhotographer(id: string): Promise<Photographer | undefined> {
+  return (await getStore()).findPhotographer(id);
+}
+
+export async function listPhotographers(): Promise<Photographer[]> {
+  return (await getStore()).listPhotographers();
+}
+
+/** O autor que a conta assina, ou `undefined` se ela não é de autor. */
+export async function photographerOfUser(userId: string): Promise<Photographer | undefined> {
+  return (await getStore()).photographerOfUser(userId);
+}
+
+/* ---------------------------- painel do autor ---------------------------- */
+
+/**
+ * Tudo do autor: rascunho, em análise e publicada. Removidas ficam de fora,
+ * salvo `includeRemoved` — que a tela de vendas usa, porque venda não some
+ * quando a foto sai do acervo.
+ */
+export async function photosOfAuthor(
+  photographerId: string,
+  options: { includeRemoved?: boolean } = {},
+): Promise<StoredPhoto[]> {
+  return (await getStore()).photosOfAuthor(photographerId, options);
+}
+
+/** Edita, já filtrado pelo autor. `undefined` = não é dele (trate como 404). */
+export async function updatePhoto(
+  photographerId: string,
+  photoId: string,
+  patch: PhotoPatch,
+): Promise<StoredPhoto | undefined> {
+  return (await getStore()).updatePhoto(photographerId, photoId, patch);
+}
+
+/** Tira do acervo sem apagar a linha — a licença de quem comprou é perpétua. */
+export async function removePhoto(photographerId: string, photoId: string): Promise<boolean> {
+  return (await getStore()).removePhoto(photographerId, photoId);
 }

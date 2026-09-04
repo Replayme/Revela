@@ -1,4 +1,5 @@
 import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
+import { Pool } from 'pg';
 
 /**
  * Conexão com o Postgres (Neon).
@@ -20,12 +21,24 @@ import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
  * em que aparecer algo genuinamente interativo (cobrança, provavelmente), o
  * mesmo pacote exporta `Pool`, compatível com `pg`, por WebSocket.
  *
+ * ## Dois clientes, um contrato
+ *
+ * O driver HTTP só fala com o endpoint da Neon. Para um Postgres comum — o
+ * contêiner de quem está desenvolvendo, um servidor próprio — ele não serve, e
+ * é o `pg` que entra, por TCP. Qual dos dois é decidido pelo host da URL, e
+ * `query()` esconde a diferença: `store-postgres.ts` não sabe qual está
+ * atendendo, e é o mesmo SQL nos dois.
+ *
+ * Isso também é o que torna as consultas testáveis contra um Postgres de
+ * verdade sem depender de rede.
+ *
  * ## Runtime
  *
- * Sendo HTTPS, isto funcionaria até no runtime de edge — inclusive dentro do
- * `middleware.ts`, que hoje não consulta o banco. As rotas continuam em
- * `runtime = 'nodejs'` porque o hash de senha usa `node:crypto`, não por causa
- * do banco.
+ * Pelo caminho da Neon, sendo HTTPS, isto funcionaria até no runtime de edge —
+ * inclusive dentro do `middleware.ts`, que hoje não consulta o banco. As rotas
+ * continuam em `runtime = 'nodejs'` porque o hash de senha usa `node:crypto`,
+ * não por causa do banco. Pelo caminho do `pg` o runtime Node é obrigatório:
+ * lá existe soquete TCP.
  */
 
 /**
@@ -61,16 +74,55 @@ export function isDatabaseConfigured(): boolean {
  */
 const globalClient = globalThis as typeof globalThis & {
   __revelaSql?: NeonQueryFunction<false, false>;
+  __revelaPgPool?: Pool;
 };
 
-function client(): NeonQueryFunction<false, false> {
+function urlObrigatoria(): string {
   const url = connectionString();
   if (!url) {
     throw new Error(
       'Banco não configurado: defina DATABASE_URL. Ver docs/BANCO.md.',
     );
   }
-  return (globalClient.__revelaSql ??= neon(url));
+  return url;
+}
+
+/**
+ * O endpoint HTTP é da Neon; qualquer outro host é Postgres comum.
+ *
+ * Pelo host, e não por uma variável a mais: uma configuração que precisa ser
+ * dita duas vezes é uma configuração que um dia se contradiz. `DATABASE_URL`
+ * já sabe com quem está falando.
+ */
+function ehNeon(url: string): boolean {
+  try {
+    return new URL(url).hostname.endsWith('.neon.tech');
+  } catch {
+    return false;
+  }
+}
+
+function clienteNeon(): NeonQueryFunction<false, false> {
+  return (globalClient.__revelaSql ??= neon(urlObrigatoria()));
+}
+
+/**
+ * Pool do `pg`, para Postgres comum.
+ *
+ * Pequeno pelo mesmo motivo que qualquer pool em serverless: cada instância da
+ * função é um processo com o seu próprio, e o total pedido ao servidor é
+ * `instâncias × max`. Este caminho é o de desenvolvimento e o de quem hospeda
+ * o próprio banco; pela Neon não há pool nenhum.
+ */
+function poolPg(): Pool {
+  return (globalClient.__revelaPgPool ??= new Pool({
+    connectionString: urlObrigatoria(),
+    max: 4,
+    idleTimeoutMillis: 30_000,
+    // Um erro no pool sem ouvinte derruba o processo inteiro.
+  }).on('error', () => {
+    delete globalClient.__revelaPgPool;
+  }));
 }
 
 /* ------------------------------- consultas ------------------------------- */
@@ -88,7 +140,9 @@ function client(): NeonQueryFunction<false, false> {
  * passo, use CTE.
  */
 export async function query<T>(text: string, params: unknown[] = []): Promise<T[]> {
-  return (await client().query(text, params)) as T[];
+  const url = urlObrigatoria();
+  if (ehNeon(url)) return (await clienteNeon().query(text, params)) as T[];
+  return (await poolPg().query(text, params)).rows as T[];
 }
 
 /** A primeira linha, ou `undefined`. */

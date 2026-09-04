@@ -2,7 +2,7 @@
 
 import { PhotoCard, PhotoCardSkeleton } from './photo-card';
 import { IconImage } from './icons';
-import type { Photo } from '@/lib/mock-photos';
+import type { Photo } from '@/lib/model';
 
 /**
  * `wide` para a grade em largura total (a home). `compact` para quando há uma

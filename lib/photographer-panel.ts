@@ -1,4 +1,6 @@
-import type { Photo } from './mock-photos';
+import type { PhotoStatus, StoredPhoto } from './model';
+
+export type { PhotoStatus };
 
 /**
  * O formato que o painel de quem vende espera receber.
@@ -13,17 +15,14 @@ import type { Photo } from './mock-photos';
  */
 
 /**
- * Onde a foto está no caminho até o acervo.
+ * A ficha da foto para quem a publicou: o que o armazenamento devolve
+ * (`StoredPhoto` — a ficha pública mais o estado e as datas) somado ao que só
+ * o autor vê, que é o que ela já rendeu.
  *
- * `rascunho` é do autor e de mais ninguém; `em-analise` já foi enviada e
- * espera a curadoria; `publicada` está à venda. Um quarto estado — recusada —
- * só vale a pena existir junto com o motivo da recusa, e o motivo é texto que
- * alguém precisa escrever. Fica de fora até haver quem escreva.
+ * `PhotoStatus` mudou de casa junto com o resto do modelo, e é reexportado
+ * acima porque `STATUS_LABEL` e `STATUS_CLASS`, logo abaixo, são dele.
  */
-export type PhotoStatus = 'rascunho' | 'em-analise' | 'publicada';
-
-export interface PhotographerPhoto extends Photo {
-  status: PhotoStatus;
+export interface PhotographerPhoto extends StoredPhoto {
   /** Licenças já emitidas desta foto. */
   sales: number;
   /**
@@ -34,14 +33,6 @@ export interface PhotographerPhoto extends Photo {
    * esse tipo de número que saiu da tela no commit anterior.
    */
   revenue: number;
-  /**
-   * Última alteração na ficha.
-   *
-   * Opcional porque o catálogo de demonstração não a tem, e uma data inventada
-   * — a de hoje, a do primeiro pedido — seria pior que data nenhuma: ela
-   * *parece* informação. Sem ela, o card simplesmente não mostra data.
-   */
-  updatedAt?: number;
 }
 
 /** O rótulo de cada estado, na voz do site. */

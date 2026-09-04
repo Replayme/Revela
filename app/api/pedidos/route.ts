@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createOrder, findOrder } from '@/lib/repository';
+import { createOrder, findOrder, findPhoto } from '@/lib/repository';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
-import { findPhoto } from '@/lib/mock-photos';
+
 import { currentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   }
 
   const photoId = typeof body.photoId === 'string' ? body.photoId : '';
-  const photo = findPhoto(photoId);
+  const photo = await findPhoto(photoId);
 
   if (!photo) {
     return NextResponse.json({ error: 'PHOTO_NOT_FOUND' }, { status: 404 });

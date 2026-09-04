@@ -66,8 +66,9 @@ deixa a assinatura para a página, como o comentário lá explica. As rotas segu
 em `runtime = 'nodejs'` por causa do `node:crypto` do hash de senha, não por
 causa do banco.
 
-Vale saber que a porta está aberta: se um dia o middleware precisar de fato
-consultar o banco (uma sessão revogável, por exemplo), dá.
+Vale saber que a porta está aberta **pelo caminho da Neon**: se um dia o
+middleware precisar de fato consultar o banco (uma sessão revogável, por
+exemplo), dá. Pelo `pg` não daria — lá é TCP, e o edge não tem soquete.
 
 ---
 
@@ -77,11 +78,14 @@ consultar o banco (uma sessão revogável, por exemplo), dá.
 lib/model.ts           o modelo e o contrato `Store` — quem quiser trocar o
                        armazenamento cumpre esta interface e nada mais
 lib/repository.ts      a porta única dos dados; escolhe banco ou memória
-lib/db.ts              cliente HTTP, consultas parametrizadas
+lib/db.ts              os dois clientes e as consultas parametrizadas
 lib/store-postgres.ts  o armazenamento em Postgres
 lib/store-memory.ts    o armazenamento em memória, para desenvolver
-db/001_schema.sql      tabelas, índices e restrições
+lib/seed-catalog.ts    o acervo de demonstração, para o store em memória
+db/001_schema.sql      contas, tokens, pedidos e favoritos
 db/002_seed_demo.sql   contas de demonstração — nunca em produção
+db/003_catalogo.sql    autores, fotos e o vínculo conta↔autor
+db/004_seed_demo_catalogo.sql  acervo de demonstração — nunca em produção
 scripts/migrate.mjs    `npm run db:migrate`
 ```
 
@@ -103,6 +107,23 @@ entre o `SELECT` e o `INSERT` cabe outra. Por isso:
 | `orders_price_paid_check` | não se grava pedido com preço negativo |
 | FK de `orders` **sem** cascade | apagar a conta não apaga a venda que o autor recebeu |
 | FK de `favorites` e tokens **com** cascade | dado acessório vai junto com a conta |
+| `users_photographer_key` | uma conta por autor (índice parcial: quase todas são nulas) |
+| `photos_status_check` | status fora de `rascunho`/`em-analise`/`publicada` não entra |
+
+### A foto nunca é apagada
+
+`DELETE /api/fotos/{id}` grava `removed_at`; a linha fica. É a única forma de
+as três promessas do site valerem ao mesmo tempo:
+
+- o autor **tira do acervo** quando quiser;
+- quem comprou **continua com o recibo e com o download**, para sempre;
+- a **venda não some** do histórico do autor — o dinheiro entrou.
+
+Um `DELETE` de verdade seria recusado pela chave estrangeira de `orders`, ou —
+com `CASCADE` — apagaria a venda junto, que é registro financeiro. A coluna
+`orientation` não existe pelo mesmo tipo de razão: ela sai de `height > width`,
+porque guardá-la abriria a porta para o banco e a tela discordarem sobre a
+mesma imagem.
 
 O repositório aproveita isso em vez de duplicar: `ON CONFLICT DO NOTHING …
 RETURNING` aparece em `createUser` e `createOrder`, e a linha devolvida (ou a
@@ -111,8 +132,9 @@ certo" de "já existia", que é o jeito de um dia engolir um erro que não era e
 
 ### Um comando por consulta
 
-Como o driver é HTTP, não há transação interativa (`BEGIN`, decidir no meio,
-`COMMIT`). Nada aqui precisa: onde seria preciso mais de um passo, o Postgres
+Pelo driver HTTP não há transação interativa (`BEGIN`, decidir no meio,
+`COMMIT`), e o SQL foi escrito para não precisar — o que vale também pelo `pg`,
+onde a transação existiria: onde seria preciso mais de um passo, o Postgres
 resolve numa consulta só, com CTE. Os dois casos que valem ler:
 
 - **`toggleFavorite`** — apaga; se não apagou nada, insere; devolve o estado que
@@ -123,8 +145,9 @@ resolve numa consulta só, com CTE. Os dois casos que valem ler:
   separa "venceu" de "não existe / já foi usado", vendo a linha como estava
   antes do UPDATE.
 
-Se um dia aparecer algo genuinamente interativo — cobrança, provavelmente — o
-mesmo pacote exporta `Pool`, compatível com `pg`, por WebSocket.
+Se um dia aparecer algo genuinamente interativo — cobrança, provavelmente —
+há duas saídas: o `Pool` por WebSocket que o próprio pacote da Neon exporta, ou
+o `pg` que já está aqui para o caminho do Postgres comum.
 
 ---
 
@@ -180,19 +203,20 @@ docker run -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=revela \
 DATABASE_URL=postgresql://postgres:dev@localhost:5432/revela
 ```
 
-Uma ressalva: `npm run db:migrate` e `lib/db.ts` usam o driver HTTP da Neon, que
-fala com o endpoint da Neon — **não** com um Postgres comum. Para um banco
-local, aplique o esquema direto:
+A aplicação enxerga esse banco sem nenhum ajuste: `lib/db.ts` escolhe o cliente
+pelo host da URL — endpoint `*.neon.tech` vai pelo driver HTTP, qualquer outro
+host vai pelo `pg`, por TCP. É a mesma decisão em um lugar só, e o
+`store-postgres.ts` não sabe qual dos dois está atendendo.
+
+O `npm run db:migrate` é a exceção: ele usa só o driver HTTP. Para um Postgres
+comum, aplique os arquivos direto — é o que os testes deste repositório fazem:
 
 ```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/001_schema.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/002_seed_demo.sql
+for f in db/00*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
 ```
 
-E para a aplicação enxergar esse banco, troque o cliente de `lib/db.ts` por
-`Pool` do `pg`. Se isso virar rotina para mais de uma pessoa, vale transformar
-em um segundo store selecionado pela URL — hoje não é, e um caminho que ninguém
-usa é um caminho que apodrece sem ninguém notar.
+Sem `db/003` e `db/004` o acervo fica vazio: as tabelas `photographers` e
+`photos` nascem nelas.
 
 ---
 

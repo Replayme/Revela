@@ -1,5 +1,5 @@
 import { CategoryCard, CategoryCardSkeleton } from './category-card';
-import type { Category } from '@/lib/mock-categories';
+import type { Category } from '@/lib/model';
 
 // Mesmo gap do PhotoGrid: as duas seções precisam bater o ritmo na home.
 const GRID = 'grid grid-cols-2 gap-6 md:grid-cols-3 lg:grid-cols-4';

@@ -1,12 +1,18 @@
 import { randomBytes } from 'node:crypto';
 import { hashPassword } from './password';
 import { hashResetToken, newResetToken, RESET_TOKEN_TTL_MS } from './tokens';
+import { seedPhotographers, seedPhotos, SEED_AUTOR_DA_ANA } from './seed-catalog';
+import { slugify } from './slug';
 import type {
+  Category,
   CreateOrderResult,
   CreateUserResult,
   Order,
+  Photographer,
+  PhotoPatch,
   ResetCheck,
   Store,
+  StoredPhoto,
   User,
 } from './model';
 
@@ -32,9 +38,25 @@ interface ResetRecord {
   usedAt?: number;
 }
 
+/**
+ * A foto como a memória a guarda: a de sempre, mais a marca de remoção.
+ *
+ * `removedAt` não está em `StoredPhoto` de propósito. No Postgres ele é uma
+ * coluna que as consultas filtram e nunca devolvem; deixá-lo no tipo público
+ * convidaria cada tela a escrever o seu próprio `if (foto.removedAt)`, que é
+ * exatamente a regra que deve morar num lugar só. O `publico()` abaixo o tira
+ * na saída, para as duas implementações devolverem a mesma coisa.
+ */
+interface FotoNaMemoria extends StoredPhoto {
+  removedAt?: number;
+}
+
 interface MemoryStore {
   users: User[];
   orders: Order[];
+  /** Cópia mutável do acervo: editar e remover no painel precisam de onde escrever. */
+  photos: FotoNaMemoria[];
+  photographers: Photographer[];
   resetTokens: Map<string, ResetRecord>;
   /** Favoritos por usuário: id do usuário → ids das fotos. */
   favorites: Map<string, Set<string>>;
@@ -61,6 +83,9 @@ const seedUsers: User[] = [
     name: 'Ana Ribeiro',
     email: 'ana@revela.com',
     passwordHash: hashPassword('Revela@2026'),
+    // O vínculo que era um mapa de e-mail para id de autor escrito à mão.
+    // Agora é um campo, aqui e na coluna `users.photographer_id`.
+    photographerId: SEED_AUTOR_DA_ANA,
   },
   {
     id: 'usr_bruno',
@@ -80,6 +105,11 @@ const seedUsers: User[] = [
 const store: MemoryStore = (globalStore.__revelaMemoryStore ??= {
   users: seedUsers,
   orders: [],
+  // Cópias rasas: editar uma foto no painel não pode alterar a semente, senão
+  // o `npm run dev` seguinte já começaria com a alteração dentro do "acervo
+  // original" e não haveria como voltar sem reiniciar o editor.
+  photos: seedPhotos.map((foto) => ({ ...foto })),
+  photographers: seedPhotographers.map((autor) => ({ ...autor })),
   resetTokens: new Map(),
   favorites: new Map(),
 });
@@ -184,21 +214,31 @@ export const memoryStore: Store = {
   },
 
   /**
-   * Os pedidos de uma foto — o outro lado da transação, para o painel de quem
-   * a publicou.
-   *
-   * Diferente das buscas acima, esta **não** é filtrada por dono, e não é
-   * descuido: quem pergunta aqui é o autor da foto, e ele não é o dono de
-   * nenhum destes pedidos. A conferência de que a foto é mesmo dele fica com
-   * quem chama, porque é lá que existe o vínculo entre conta e autor.
-   *
-   * Nunca devolva isto a um cliente sem essa conferência: a lista diz quem
-   * comprou o quê.
+   * Os pedidos das fotos de um autor. O `userId` vem junto porque está no
+   * `Order` — mas a tela de vendas não o mostra. Ver `lib/model.ts`.
    */
-  async ordersByPhoto(photoId) {
+  async ordersByAuthor(photographerId) {
+    const fotos = new Set(
+      store.photos.filter((f) => f.photographer.id === photographerId).map((f) => f.id),
+    );
     return store.orders
-      .filter((o) => o.photoId === photoId)
+      .filter((o) => fotos.has(o.photoId))
       .sort((a, b) => b.createdAt - a.createdAt);
+  },
+
+  async salesByAuthor(photographerId) {
+    const fotos = new Set(
+      store.photos.filter((f) => f.photographer.id === photographerId).map((f) => f.id),
+    );
+
+    const porFoto: Record<string, { sales: number; revenue: number }> = {};
+    for (const pedido of store.orders) {
+      if (!fotos.has(pedido.photoId)) continue;
+      const atual = (porFoto[pedido.photoId] ??= { sales: 0, revenue: 0 });
+      atual.sales += 1;
+      atual.revenue += pedido.pricePaid;
+    }
+    return porFoto;
   },
 
   /**
@@ -228,4 +268,148 @@ export const memoryStore: Store = {
     store.favorites.set(userId, atuais);
     return favoritada;
   },
+
+  /* ------------------------- acervo — leitura pública --------------------- */
+
+  async listPhotos(options = {}) {
+    return store.photos
+      .filter(noAcervo)
+      .filter((foto) => !options.category || foto.category === options.category)
+      .sort(porRecencia)
+      .map(publico);
+  },
+
+  async findPhoto(photoId) {
+    const foto = store.photos.find((f) => f.id === photoId && noAcervo(f));
+    return foto && publico(foto);
+  },
+
+  /** Sem filtro de estado — é o ponto. Ver o contrato em `lib/model.ts`. */
+  async findSoldPhoto(photoId) {
+    const foto = store.photos.find((f) => f.id === photoId);
+    return foto && publico(foto);
+  },
+
+  async photosByPhotographer(photographerId) {
+    return store.photos
+      .filter((foto) => foto.photographer.id === photographerId && noAcervo(foto))
+      .sort(porRecencia)
+      .map(publico);
+  },
+
+  async listCategories(): Promise<Category[]> {
+    const porNome = new Map<string, { count: number; thumbnailUrl: string }>();
+
+    for (const foto of [...store.photos].filter(noAcervo).sort((a, b) => a.id.localeCompare(b.id))) {
+      const atual = porNome.get(foto.category);
+      if (atual) atual.count += 1;
+      // A capa é a primeira foto da categoria: o cartão mostra o acervo que
+      // promete, não uma imagem avulsa.
+      else porNome.set(foto.category, { count: 1, thumbnailUrl: foto.thumbnailUrl });
+    }
+
+    return [...porNome.entries()]
+      .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0], 'pt-BR'))
+      .map(([name, { count, thumbnailUrl }], indice) => ({
+        id: `c-${String(indice + 1).padStart(2, '0')}`,
+        name,
+        slug: slugify(name),
+        photoCount: count,
+        thumbnailUrl,
+      }));
+  },
+
+  /* -------------------------------- autores -------------------------------- */
+
+  async findPhotographer(photographerId) {
+    const autor = store.photographers.find((a) => a.id === photographerId);
+    return autor ? comContagem(autor) : undefined;
+  },
+
+  async listPhotographers() {
+    return store.photographers
+      .map(comContagem)
+      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  },
+
+  async photographerOfUser(userId) {
+    const user = store.users.find((u) => u.id === userId);
+    if (!user?.photographerId) return undefined;
+    const autor = store.photographers.find((a) => a.id === user.photographerId);
+    return autor ? comContagem(autor) : undefined;
+  },
+
+  /* --------------------------- painel — escrita ---------------------------- */
+
+  async photosOfAuthor(photographerId, options = {}) {
+    return store.photos
+      .filter(
+        (foto) =>
+          foto.photographer.id === photographerId &&
+          (options.includeRemoved || !foto.removedAt),
+      )
+      .sort(porRecencia)
+      .map(publico);
+  },
+
+  /**
+   * O filtro por autor faz parte da busca, e não é um `if` antes dela: quem
+   * procura a foto e só depois compara o dono é quem um dia esquece de
+   * comparar. Foto de outra pessoa devolve `undefined`.
+   */
+  async updatePhoto(photographerId, photoId, patch: PhotoPatch) {
+    const foto = store.photos.find(
+      (f) => f.id === photoId && f.photographer.id === photographerId && !f.removedAt,
+    );
+    if (!foto) return undefined;
+
+    if (patch.title !== undefined) foto.title = patch.title;
+    if (patch.category !== undefined) foto.category = patch.category;
+    if (patch.price !== undefined) foto.price = patch.price;
+    if (patch.status !== undefined) foto.status = patch.status;
+    foto.updatedAt = Date.now();
+
+    return publico(foto);
+  },
+
+  /** Marca, não apaga — a licença de quem comprou é perpétua. Ver `lib/model.ts`. */
+  async removePhoto(photographerId, photoId) {
+    const foto = store.photos.find(
+      (f) => f.id === photoId && f.photographer.id === photographerId && !f.removedAt,
+    );
+    if (!foto) return false;
+
+    foto.removedAt = Date.now();
+    foto.updatedAt = Date.now();
+    return true;
+  },
 };
+
+/* ------------------------------- auxiliares ------------------------------- */
+
+/** No acervo: publicada e não removida — a mesma definição do SQL. */
+function noAcervo(foto: FotoNaMemoria): boolean {
+  return !foto.removedAt && foto.status === 'publicada';
+}
+
+/**
+ * Mais recente primeiro; o id desempata. As catorze fotos de demonstração
+ * nascem no mesmo instante, e sem o desempate a home embaralharia a cada
+ * render.
+ */
+function publico({ removedAt: _removida, ...foto }: FotoNaMemoria): StoredPhoto {
+  return foto;
+}
+
+function porRecencia(a: StoredPhoto, b: StoredPhoto): number {
+  return b.createdAt - a.createdAt || a.id.localeCompare(b.id);
+}
+
+function comContagem(autor: Photographer): Photographer {
+  return {
+    ...autor,
+    photoCount: store.photos.filter(
+      (foto) => foto.photographer.id === autor.id && noAcervo(foto),
+    ).length,
+  };
+}

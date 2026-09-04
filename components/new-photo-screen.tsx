@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { PhotoUploadForm, type PhotoDraft } from './photo-upload-form';
 import { IconAlert, IconCheck } from './icons';
 import { formatFileSize, formatPrice } from '@/lib/format';
+import type { Category } from '@/lib/model';
 
 /**
  * A tela de enviar foto — o formulário e o que acontece quando ele termina.
@@ -21,7 +22,7 @@ import { formatFileSize, formatPrice } from '@/lib/format';
  * `POST /api/fotos` existir, o que muda é o corpo de `receber` — o formulário
  * já entrega a ficha pronta.
  */
-export function NewPhotoScreen() {
+export function NewPhotoScreen({ categories }: { categories: Category[] }) {
   const [ficha, setFicha] = useState<PhotoDraft | null>(null);
 
   function receber(draft: PhotoDraft) {
@@ -35,7 +36,11 @@ export function NewPhotoScreen() {
     <>
       <AvisoDeEntrada />
       <div className="mt-9">
-        <PhotoUploadForm onSubmit={receber} submitLabel="Conferir a ficha" />
+        <PhotoUploadForm
+          categories={categories}
+          onSubmit={receber}
+          submitLabel="Conferir a ficha"
+        />
       </div>
     </>
   );

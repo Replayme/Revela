@@ -2,12 +2,17 @@ import { randomBytes } from 'node:crypto';
 import { query, queryOne } from './db';
 import { hashPassword } from './password';
 import { hashResetToken, newResetToken, RESET_TOKEN_TTL_MS } from './tokens';
+import { slugify } from './slug';
 import type {
+  Category,
   CreateOrderResult,
   CreateUserResult,
   Order,
+  Photographer,
+  PhotoPatch,
   ResetCheck,
   Store,
+  StoredPhoto,
   User,
 } from './model';
 
@@ -43,6 +48,7 @@ interface UserRow {
   email: string;
   password_hash: string;
   disabled: boolean;
+  photographer_id: string | null;
 }
 
 function toUser(row: UserRow): User {
@@ -55,6 +61,7 @@ function toUser(row: UserRow): User {
     // código testa por veracidade. Manter a mesma forma evita que algum `if`
     // que hoje funciona passe a ver `false` onde esperava `undefined`.
     ...(row.disabled ? { disabled: true } : {}),
+    ...(row.photographer_id ? { photographerId: row.photographer_id } : {}),
   };
 }
 
@@ -91,7 +98,97 @@ function toOrder(row: OrderRow): Order {
   };
 }
 
-const USER_COLUMNS = 'id, name, email, password_hash, disabled';
+interface PhotoRow {
+  id: string;
+  photographer_id: string;
+  photographer_name: string;
+  title: string;
+  category: string;
+  price: string;
+  rating: string;
+  status: string;
+  width: number;
+  height: number;
+  thumbnail_url: string;
+  full_url: string;
+  created_at: Date;
+  updated_at: Date | null;
+}
+
+function toPhoto(row: PhotoRow): StoredPhoto {
+  return {
+    id: row.id,
+    title: row.title,
+    photographer: { id: row.photographer_id, name: row.photographer_name },
+    price: Number(row.price),
+    rating: Number(row.rating),
+    thumbnailUrl: row.thumbnail_url,
+    fullUrl: row.full_url,
+    width: row.width,
+    height: row.height,
+    category: row.category,
+    // Derivada, nunca guardada — ver `Photo.orientation` em `lib/model.ts`.
+    orientation: row.height > row.width ? 'vertical' : 'horizontal',
+    status: row.status as StoredPhoto['status'],
+    createdAt: row.created_at.getTime(),
+    ...(row.updated_at ? { updatedAt: row.updated_at.getTime() } : {}),
+  };
+}
+
+interface PhotographerRow {
+  id: string;
+  name: string;
+  avatar_url: string;
+  cover_photo_url: string;
+  rating: string;
+  photo_count: number;
+}
+
+function toPhotographer(row: PhotographerRow): Photographer {
+  return {
+    id: row.id,
+    name: row.name,
+    avatarUrl: row.avatar_url,
+    coverPhotoUrl: row.cover_photo_url,
+    rating: Number(row.rating),
+    photoCount: row.photo_count,
+  };
+}
+
+/**
+ * As colunas da foto mais o nome de quem assina.
+ *
+ * O JOIN existe porque `Photo.photographer` é `{ id, name }` — a ficha mostra
+ * o nome, não o slug. Trazer só o id obrigaria cada tela a buscar o autor
+ * depois, uma consulta por foto, para escrever uma linha de legenda.
+ */
+const PHOTO_SELECT = `
+  SELECT f.id, f.photographer_id, a.name AS photographer_name, f.title,
+         f.category, f.price, f.rating, f.status, f.width, f.height,
+         f.thumbnail_url, f.full_url, f.created_at, f.updated_at
+    FROM photos f
+    JOIN photographers a ON a.id = f.photographer_id`;
+
+/** No acervo: publicada e não removida. É a definição de "existe para quem visita". */
+const NO_ACERVO = `f.removed_at IS NULL AND f.status = 'publicada'`;
+
+/**
+ * Mais recente primeiro; o id desempata.
+ *
+ * O acervo de demonstração entra todo num INSERT só, então as catorze fotos
+ * têm o mesmo `created_at` — sem o desempate a home embaralharia a cada
+ * consulta, e "por que a ordem muda sozinha?" é um bug caro de achar.
+ */
+const ORDEM = `ORDER BY f.created_at DESC, f.id ASC`;
+
+const PHOTOGRAPHER_SELECT = `
+  SELECT a.id, a.name, a.avatar_url, a.cover_photo_url, a.rating,
+         (SELECT count(*)::int FROM photos f
+           WHERE f.photographer_id = a.id
+             AND f.removed_at IS NULL AND f.status = 'publicada') AS photo_count
+    FROM photographers a`;
+
+const USER_COLUMNS = 'id, name, email, password_hash, disabled, photographer_id';
 const ORDER_COLUMNS =
   'id, user_id, photo_id, price_paid, license_version, created_at';
 
@@ -271,22 +368,39 @@ export const postgresStore: Store = {
   },
 
   /**
-   * **Não** filtrado pelo dono, e não é descuido: quem pergunta é o autor da
-   * foto, que não é o dono de nenhum destes pedidos. A conferência de que a
-   * foto é dele fica com quem chama, porque é lá que existe o vínculo entre
-   * conta e autor.
+   * A junção é do banco: uma consulta para o painel inteiro, no lugar de uma
+   * por foto do acervo do autor.
    *
-   * Nunca devolva isto a um cliente sem essa conferência: a lista diz quem
-   * comprou o quê.
+   * O `user_id` vem junto porque é coluna de `orders` — mas a tela de vendas
+   * não o mostra. Ver o contrato em `lib/model.ts`.
    */
-  async ordersByPhoto(photoId) {
+  async ordersByAuthor(photographerId) {
     const rows = await query<OrderRow>(
-      `SELECT ${ORDER_COLUMNS} FROM orders
-        WHERE photo_id = $1
-        ORDER BY created_at DESC`,
-      [photoId],
+      `SELECT ${ORDER_COLUMNS.split(', ').map((c) => `o.${c}`).join(', ')}
+         FROM orders o
+         JOIN photos f ON f.id = o.photo_id
+        WHERE f.photographer_id = $1
+        ORDER BY o.created_at DESC`,
+      [photographerId],
     );
     return rows.map(toOrder);
+  },
+
+  async salesByAuthor(photographerId) {
+    const rows = await query<{ photo_id: string; sales: number; revenue: string }>(
+      `SELECT o.photo_id,
+              count(*)::int AS sales,
+              COALESCE(sum(o.price_paid), 0) AS revenue
+         FROM orders o
+         JOIN photos f ON f.id = o.photo_id
+        WHERE f.photographer_id = $1
+        GROUP BY o.photo_id`,
+      [photographerId],
+    );
+
+    return Object.fromEntries(
+      rows.map((row) => [row.photo_id, { sales: row.sales, revenue: Number(row.revenue) }]),
+    );
   },
 
   async favoritesByUser(userId) {
@@ -333,5 +447,184 @@ export const postgresStore: Store = {
       [userId, photoId],
     );
     return row?.favorited ?? false;
+  },
+
+  /* ------------------------- acervo — leitura pública --------------------- */
+
+  async listPhotos(options = {}) {
+    const rows = await query<PhotoRow>(
+      `${PHOTO_SELECT}
+        WHERE ${NO_ACERVO}
+          AND ($1::text IS NULL OR f.category = $1)
+        ${ORDEM}`,
+      [options.category ?? null],
+    );
+    return rows.map(toPhoto);
+  },
+
+  async findPhoto(photoId) {
+    const row = await queryOne<PhotoRow>(
+      `${PHOTO_SELECT} WHERE f.id = $1 AND ${NO_ACERVO}`,
+      [photoId],
+    );
+    return row ? toPhoto(row) : undefined;
+  },
+
+  /** Sem filtro de estado — é o ponto. Ver o contrato em `lib/model.ts`. */
+  async findSoldPhoto(photoId) {
+    const row = await queryOne<PhotoRow>(`${PHOTO_SELECT} WHERE f.id = $1`, [photoId]);
+    return row ? toPhoto(row) : undefined;
+  },
+
+  async photosByPhotographer(photographerId) {
+    const rows = await query<PhotoRow>(
+      `${PHOTO_SELECT} WHERE f.photographer_id = $1 AND ${NO_ACERVO} ${ORDEM}`,
+      [photographerId],
+    );
+    return rows.map(toPhoto);
+  },
+
+  /**
+   * As categorias saem de um `GROUP BY` sobre o acervo, não de uma lista
+   * escrita à mão.
+   *
+   * Antes a lista era fixa e trazia outro vocabulário — Natureza, Negócios,
+   * Viagens — que não batia com nenhuma categoria das fotos, e o cartão da home
+   * levava para uma busca sem resultado. Derivar da fonte é o que garante que
+   * todo filtro oferecido tem o que mostrar.
+   *
+   * A capa é a primeira foto da categoria: o cartão mostra o acervo que
+   * promete, não uma imagem avulsa.
+   */
+  async listCategories(): Promise<Category[]> {
+    const rows = await query<{
+      name: string;
+      photo_count: number;
+      thumbnail_url: string;
+    }>(
+      `SELECT f.category AS name,
+              count(*)::int AS photo_count,
+              (array_agg(f.thumbnail_url ORDER BY f.id))[1] AS thumbnail_url
+         FROM photos f
+        WHERE f.removed_at IS NULL AND f.status = 'publicada'
+        GROUP BY f.category`,
+    );
+
+    // A ordenação fica aqui, e não no SQL, porque `localeCompare('pt-BR')`
+    // ordena acento como leitor brasileiro espera e a collation do servidor
+    // não é garantida — o mesmo banco em outra instalação mudaria a home.
+    return rows
+      .sort((a, b) => b.photo_count - a.photo_count || a.name.localeCompare(b.name, 'pt-BR'))
+      .map((row, indice) => ({
+        id: `c-${String(indice + 1).padStart(2, '0')}`,
+        name: row.name,
+        slug: slugify(row.name),
+        photoCount: row.photo_count,
+        thumbnailUrl: row.thumbnail_url,
+      }));
+  },
+
+  /* -------------------------------- autores -------------------------------- */
+
+  async findPhotographer(photographerId) {
+    const row = await queryOne<PhotographerRow>(
+      `${PHOTOGRAPHER_SELECT} WHERE a.id = $1`,
+      [photographerId],
+    );
+    return row ? toPhotographer(row) : undefined;
+  },
+
+  async listPhotographers() {
+    const rows = await query<PhotographerRow>(
+      `${PHOTOGRAPHER_SELECT} ORDER BY a.name`,
+    );
+    return rows.map(toPhotographer);
+  },
+
+  /**
+   * O que substituiu o `VINCULO_DEMO`: uma junção, não um mapa escrito à mão.
+   * Conta sem `photographer_id` — que é a maioria, quem só compra — devolve
+   * `undefined`, e o painel mostra o caminho para o cadastro de fotógrafo.
+   */
+  async photographerOfUser(userId) {
+    const row = await queryOne<PhotographerRow>(
+      `${PHOTOGRAPHER_SELECT}
+         JOIN users u ON u.photographer_id = a.id
+        WHERE u.id = $1`,
+      [userId],
+    );
+    return row ? toPhotographer(row) : undefined;
+  },
+
+  /* --------------------------- painel — escrita ---------------------------- */
+
+  async photosOfAuthor(photographerId, options = {}) {
+    const rows = await query<PhotoRow>(
+      `${PHOTO_SELECT}
+        WHERE f.photographer_id = $1
+          AND ($2::boolean OR f.removed_at IS NULL)
+        ${ORDEM}`,
+      [photographerId, options.includeRemoved ?? false],
+    );
+    return rows.map(toPhoto);
+  },
+
+  /**
+   * O `photographer_id` no `WHERE` é a autorização, e não um `if` antes da
+   * chamada: buscar a foto, comparar o dono e só então gravar deixa uma janela
+   * entre a comparação e o UPDATE — e é o caminho que um dia esquece de
+   * comparar. Foto de outra pessoa não atualiza linha nenhuma e devolve
+   * `undefined`.
+   *
+   * `COALESCE` por campo é o que faz o PATCH ser parcial de verdade: o que não
+   * veio no corpo continua como está, em vez de virar nulo. Os `::` são
+   * necessários — um parâmetro nulo sem tipo declarado dentro de `COALESCE`
+   * não tem como ser inferido pelo servidor.
+   */
+  async updatePhoto(photographerId, photoId, patch: PhotoPatch) {
+    const row = await queryOne<PhotoRow>(
+      `WITH atualizada AS (
+         UPDATE photos SET
+             title      = COALESCE($3::text, title),
+             category   = COALESCE($4::text, category),
+             price      = COALESCE($5::numeric, price),
+             status     = COALESCE($6::text, status),
+             updated_at = now()
+          WHERE id = $2 AND photographer_id = $1 AND removed_at IS NULL
+         RETURNING *
+       )
+       SELECT f.id, f.photographer_id, a.name AS photographer_name, f.title,
+              f.category, f.price, f.rating, f.status, f.width, f.height,
+              f.thumbnail_url, f.full_url, f.created_at, f.updated_at
+         FROM atualizada f
+         JOIN photographers a ON a.id = f.photographer_id`,
+      [
+        photographerId,
+        photoId,
+        patch.title ?? null,
+        patch.category ?? null,
+        patch.price ?? null,
+        patch.status ?? null,
+      ],
+    );
+    return row ? toPhoto(row) : undefined;
+  },
+
+  /**
+   * Remover é gravar `removed_at`, não apagar a linha.
+   *
+   * A licença é perpétua: o recibo de quem comprou tem de continuar resolvendo
+   * depois que o autor tira a foto de venda. Um DELETE de verdade ou seria
+   * recusado pela chave estrangeira de `orders`, ou — com CASCADE — apagaria a
+   * venda junto, que é registro financeiro. Ver `db/003_catalogo.sql`.
+   */
+  async removePhoto(photographerId, photoId) {
+    const linhas = await query(
+      `UPDATE photos SET removed_at = now(), updated_at = now()
+        WHERE id = $2 AND photographer_id = $1 AND removed_at IS NULL
+       RETURNING id`,
+      [photographerId, photoId],
+    );
+    return linhas.length > 0;
   },
 };

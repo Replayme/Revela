@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { IconAlert, IconCheck } from './icons';
+import { IconCheck } from './icons';
 import { formatCount, formatPrice } from '@/lib/format';
 import type { PhotographerPhoto } from '@/lib/photographer-panel';
 
@@ -27,14 +28,73 @@ import type { PhotographerPhoto } from '@/lib/photographer-panel';
  * entrada, como nas outras telas do painel.
  */
 export function RemovePhotoScreen({ photo }: { photo: PhotographerPhoto }) {
+  const router = useRouter();
   const [feito, setFeito] = useState<'despublicar' | 'remover' | null>(null);
+  const [emCurso, setEmCurso] = useState<'despublicar' | 'remover' | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  /**
+   * Duas ações, dois verbos HTTP, e é a diferença entre elas que decide qual.
+   *
+   * Despublicar é uma mudança de estado da ficha: `PATCH` com
+   * `status: 'rascunho'`. A foto continua no painel e volta à venda quando o
+   * autor quiser.
+   *
+   * Remover tira do acervo: `DELETE`. Que, no servidor, também não apaga linha
+   * nenhuma — grava `removed_at`, porque a licença de quem já comprou é
+   * perpétua e o recibo precisa continuar resolvendo. "Não tem volta" é
+   * verdade para o autor, e é o que a tela promete; o que não se pode é apagar
+   * a venda junto.
+   */
+  async function executar(acao: 'despublicar' | 'remover') {
+    setEmCurso(acao);
+    setErro(null);
+
+    try {
+      const resposta =
+        acao === 'despublicar'
+          ? await fetch(`/api/fotos/${photo.id}`, {
+              method: 'PATCH',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ status: 'rascunho' }),
+            })
+          : await fetch(`/api/fotos/${photo.id}`, { method: 'DELETE' });
+
+      if (!resposta.ok) {
+        setErro(
+          resposta.status === 404
+            ? 'Esta foto não está mais no seu acervo.'
+            : 'Não deu para concluir agora. Tente de novo.',
+        );
+        setEmCurso(null);
+        return;
+      }
+
+      // O painel é servido pelo servidor: sem o `refresh`, voltar para
+      // "minhas fotos" mostraria a foto ainda lá, vinda do cache do roteador.
+      router.refresh();
+      setFeito(acao);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {
+      setErro('Não deu para falar com o servidor. Verifique a conexão.');
+      setEmCurso(null);
+    }
+  }
 
   if (feito) return <Resultado acao={feito} photo={photo} />;
 
   return (
     <>
-      <AvisoDeEntrada />
       <LicencasSeguem photo={photo} />
+
+      {erro && (
+        <p
+          role="alert"
+          className="mt-6 border-l-[3px] border-signal-error bg-signal-error/12 px-4 py-3 text-sm text-paper-200"
+        >
+          {erro}
+        </p>
+      )}
 
       <div className="mt-10 grid gap-5">
         <Opcao
@@ -48,7 +108,9 @@ export function RemovePhotoScreen({ photo }: { photo: PhotographerPhoto }) {
           rotuloBotao="Despublicar"
           perguntaConfirmacao={`Tirar “${photo.title}” da venda?`}
           tom="normal"
-          onConfirmar={() => setFeito('despublicar')}
+          emCurso={emCurso === 'despublicar'}
+          desabilitado={emCurso !== null}
+          onConfirmar={() => executar('despublicar')}
         />
 
         <Opcao
@@ -62,30 +124,12 @@ export function RemovePhotoScreen({ photo }: { photo: PhotographerPhoto }) {
           rotuloBotao="Remover"
           perguntaConfirmacao={`Remover “${photo.title}” em definitivo?`}
           tom="risco"
-          onConfirmar={() => setFeito('remover')}
+          emCurso={emCurso === 'remover'}
+          desabilitado={emCurso !== null}
+          onConfirmar={() => executar('remover')}
         />
       </div>
     </>
-  );
-}
-
-function AvisoDeEntrada() {
-  return (
-    <div className="mt-8 flex items-start gap-3 border-l-[3px] border-amber bg-amber/8 px-4 py-3.5">
-      <IconAlert width={17} height={17} className="mt-0.5 shrink-0 text-amber" />
-      <div className="min-w-0 text-sm leading-relaxed text-paper-300">
-        <p className="font-semibold text-paper">
-          Esta tela ainda não faz nenhuma das duas.
-        </p>
-        <p className="mt-1.5">
-          Faltam{' '}
-          <code className="font-mono text-paper-400">PATCH /api/fotos/{'{id}'}</code>{' '}
-          e{' '}
-          <code className="font-mono text-paper-400">DELETE /api/fotos/{'{id}'}</code>.
-          A foto continua no acervo exatamente como está.
-        </p>
-      </div>
-    </div>
   );
 }
 
@@ -146,6 +190,8 @@ function Opcao({
   rotuloBotao,
   perguntaConfirmacao,
   tom,
+  emCurso,
+  desabilitado,
   onConfirmar,
 }: {
   titulo: string;
@@ -154,6 +200,10 @@ function Opcao({
   rotuloBotao: string;
   perguntaConfirmacao: string;
   tom: 'normal' | 'risco';
+  /** Esta ação está em andamento — é a que muda de rótulo. */
+  emCurso: boolean;
+  /** Alguma ação está em andamento: as duas travam, para não sair as duas. */
+  desabilitado: boolean;
   onConfirmar: () => void;
 }) {
   const [confirmando, setConfirmando] = useState(false);
@@ -214,16 +264,19 @@ function Opcao({
               ref={confirmarRef}
               type="button"
               onClick={onConfirmar}
+              disabled={desabilitado}
               className={
-                risco
+                (risco
                   ? 'bg-signal-error px-5 py-3 text-[11px] font-bold tracking-[0.16em] text-paper uppercase transition-opacity hover:opacity-90'
-                  : 'bg-amber px-5 py-3 text-[11px] font-bold tracking-[0.16em] text-prussia-950 uppercase transition-[background-color] hover:bg-amber-light'
+                  : 'bg-amber px-5 py-3 text-[11px] font-bold tracking-[0.16em] text-prussia-950 uppercase transition-[background-color] hover:bg-amber-light') +
+                ' disabled:cursor-not-allowed disabled:opacity-60'
               }
             >
-              Confirmar
+              {emCurso ? 'Aguarde…' : 'Confirmar'}
             </button>
             <button
               type="button"
+              disabled={desabilitado}
               onClick={() => setConfirmando(false)}
               className="text-[11px] font-medium tracking-[0.16em] text-paper-400 uppercase transition-colors hover:text-paper"
             >

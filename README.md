@@ -222,6 +222,8 @@ app/
   foto/[id]/          página da foto, com a compra
   api/auth/{login,register,forgot-password,reset-password,logout}/
   api/pedidos/        compra e entrega do arquivo
+  api/fotos/[id]/     PATCH edita e despublica · DELETE tira do acervo
+  api/minhas-fotos/   o painel de quem vende
   globals.css         tokens, texturas e animações
 components/
   auth-shell.tsx      moldura das telas de acesso
@@ -237,7 +239,6 @@ middleware.ts         barreira das rotas privadas, antes do render
 lib/
   site.ts             o endereço público, num lugar só (OG, sitemap, robots)
   session-cookie.ts   o nome do cookie — sem dependência, para o edge
-  mock-categories.ts  categorias derivadas do acervo (nunca filtro vazio)
   validation.ts       regras compartilhadas cliente/servidor
   rate-limit.ts       limites e bloqueio
   session.ts          leitura do cookie de sessão, num lugar só
@@ -246,13 +247,20 @@ lib/
   tokens.ts           token de sessão e token de reset, assinados
   model.ts            o modelo de dados e o contrato de armazenamento
   repository.ts       a porta única dos dados — escolhe banco ou memória
-  db.ts               cliente do Postgres, consultas parametrizadas
+  db.ts               os dois clientes do Postgres, consultas parametrizadas
   store-postgres.ts   o armazenamento em Postgres
   store-memory.ts     o armazenamento em memória, para desenvolver
+  seed-catalog.ts     o acervo de demonstração, para o store em memória
+  photographer-panel.ts       o contrato do painel de quem vende
+  photographer-panel-data.ts  o painel, montado a partir do banco
+  photo-validation.ts as regras da ficha da foto, no servidor
+  slug.ts             "Arquitetura e imóveis" → "arquitetura-e-imoveis"
   i18n.ts             pt / en
 db/
-  001_schema.sql      tabelas, índices e restrições
+  001_schema.sql      contas, tokens, pedidos e favoritos
   002_seed_demo.sql   contas de demonstração (nunca em produção)
+  003_catalogo.sql    autores, fotos e o vínculo conta↔autor
+  004_seed_demo_catalogo.sql  acervo de demonstração (nunca em produção)
 scripts/migrate.mjs   aplicador de migrações — `npm run db:migrate`
 docs/API.md           contrato do back-end
 docs/BANCO.md         o banco: escolha, esquema e operação

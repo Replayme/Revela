@@ -4,8 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { IconAlert, IconCheck, IconDownload } from '@/components/icons';
-import { findOrderById } from '@/lib/repository';
-import { findPhoto } from '@/lib/mock-photos';
+import { findOrderById, findSoldPhoto } from '@/lib/repository';
 import { UNIVERSAL_LICENSE, licenseByVersion } from '@/lib/license';
 import { currentSession } from '@/lib/session';
 import { formatDateLong, formatPrice } from '@/lib/format';
@@ -41,7 +40,7 @@ export default async function OrderPage({
   const order = await findOrderById(session.sub, id);
   if (!order) notFound();
 
-  const photo = findPhoto(order.photoId);
+  const photo = await findSoldPhoto(order.photoId);
   // Versão desconhecida só acontece se o texto sumir do código sem migração.
   // Cai na atual com aviso, em vez de derrubar o recibo de uma compra real.
   const license = licenseByVersion(order.licenseVersion);

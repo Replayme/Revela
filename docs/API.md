@@ -388,6 +388,55 @@ Três decisões que valem para a versão real:
   privado, com `Content-Disposition: attachment` e `Cache-Control: no-store`.
   A rota confere a posse a cada pedido e só então assina.
 
+### `PATCH /api/fotos/<id>` — edita a ficha
+
+Só o autor da foto. Corpo parcial: manda-se **apenas** o que mudou.
+
+```jsonc
+{ "title": "…", "category": "…", "price": 109.5, "status": "rascunho" }
+```
+
+| HTTP | `error` | Quando |
+| ---- | ------- | ------ |
+| 200  | —       | `{ "photo": { … } }` com a ficha já atualizada |
+| 400  | `VALIDATION` | Campo malformado (`fields` diz qual), ou corpo sem nenhum campo |
+| 401  | `UNAUTHENTICATED` | Sem sessão |
+| 404  | `PHOTO_NOT_FOUND` | Foto inexistente **ou de outro autor** — ver §7 |
+
+`status` é como **despublicar** acontece: `'rascunho'` tira da venda sem tirar
+do acervo do autor. Mudar o preço **não altera pedido antigo** — `pricePaid`
+mora no pedido justamente para isso.
+
+A conferência de dono não é um `if` antes da gravação: o id do autor entra no
+`WHERE` do UPDATE. Buscar, comparar e só então gravar deixa uma janela entre a
+comparação e a escrita.
+
+### `DELETE /api/fotos/<id>` — tira do acervo
+
+| HTTP | `error` | Quando |
+| ---- | ------- | ------ |
+| 200  | —       | `{ "ok": true }` |
+| 401  | `UNAUTHENTICATED` | Sem sessão |
+| 404  | `PHOTO_NOT_FOUND` | Inexistente ou de outro autor |
+
+**Não apaga a linha, e não toca nos pedidos.** Grava `removed_at`: a foto sai
+da busca, do acervo e do painel, e quem já comprou continua com o recibo e com
+o download. A venda também continua no histórico do autor. Ver docs/BANCO.md.
+
+### `GET /api/minhas-fotos` — o painel de quem vende
+
+Responde `{ photographer, photos }`. Conta que não é de autor recebe **200 com
+o painel vazio** (`photographer: null`), não 404: ela existe e simplesmente não
+publicou nada.
+
+`photos[]` traz `status`, `sales` e `revenue` por foto. **Nunca traz quem
+comprou** — ver o comentário em `vendasDoAutor`.
+
+### `POST /api/fotos` — ainda não existe
+
+Depende de onde guardar o arquivo. Sem bucket, uma foto dita publicada cujo
+arquivo foi descartado apareceria no acervo com a imagem de outra pessoa.
+
 ### `GET /api/fotos` — ainda não existe, e nasce paginado
 
 A busca do acervo (`/explorar`) filtra e ordena **em memória**, sobre o array

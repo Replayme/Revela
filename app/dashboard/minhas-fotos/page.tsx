@@ -6,7 +6,7 @@ import { PhotographerStats } from '@/components/photographer-stats';
 import { PhotographerPhotoCard } from '@/components/photographer-photo-card';
 import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft, IconImage, IconLicense, IconUpload } from '@/components/icons';
-import { painelDoAutor } from '@/lib/mock-photographer-panel';
+import { painelDoAutor } from '@/lib/photographer-panel-data';
 import { summarize } from '@/lib/photographer-panel';
 import { currentSession } from '@/lib/session';
 
@@ -37,7 +37,7 @@ export default async function MinhasFotosPage() {
     redirect(`/login?next=${encodeURIComponent('/dashboard/minhas-fotos')}`);
   }
 
-  const painel = await painelDoAutor(session.email);
+  const painel = await painelDoAutor(session.sub);
 
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">

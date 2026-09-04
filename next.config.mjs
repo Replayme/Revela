@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // O `pg` resolve o driver nativo opcional (`pg-native`) por `require`
+  // calculado em tempo de execução, que o empacotador não enxerga. Fora do
+  // bundle, o Node o resolve normalmente do `node_modules`. O driver da Neon
+  // não precisa disto — é `fetch` puro.
+  serverExternalPackages: ['pg'],
   images: {
     // Host das fotos de demonstração (lib/mock-photos.ts). Trocar pelo CDN do
     // acervo quando as fotos reais entrarem.

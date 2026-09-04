@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { findOrderById } from '@/lib/repository';
-import { findPhoto } from '@/lib/mock-photos';
+import { findOrderById, findSoldPhoto } from '@/lib/repository';
+
 import { currentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -37,7 +37,10 @@ export async function GET(
     return NextResponse.json({ error: 'ORDER_NOT_FOUND' }, { status: 404 });
   }
 
-  const photo = findPhoto(order.photoId);
+  // `findSoldPhoto`, e não `findPhoto`: quem comprou continua baixando o
+  // arquivo depois de o autor tirar a foto do acervo. É o que "licença
+  // perpétua" quer dizer, e a busca do acervo devolveria `undefined` aqui.
+  const photo = await findSoldPhoto(order.photoId);
   if (!photo) {
     return NextResponse.json({ error: 'PHOTO_NOT_FOUND' }, { status: 404 });
   }
