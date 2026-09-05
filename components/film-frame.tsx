@@ -1,10 +1,5 @@
 import type { ReactNode } from 'react';
 
-/**
- * Bloco de conteúdo no formato de um fotograma: papel entre duas fitas de
- * perfuração. Cantos vivos — nada de card arredondado.
- * O mesmo componente serve para as caixas de categoria da home.
- */
 export function FilmFrame({
   children,
   edgeCode = 'REVELA 400',
@@ -15,10 +10,6 @@ export function FilmFrame({
   children: ReactNode;
   edgeCode?: string;
   frameNumber?: string;
-  /**
-   * Marcação de borda do negativo ("REVELA 400 ▸ 12A"). Desligue onde o selo
-   * não deve se repetir: ele identifica a foto do acervo, não a moldura.
-   */
   markings?: boolean;
   className?: string;
 }) {
@@ -29,19 +20,13 @@ export function FilmFrame({
       <Perforation side="left" />
       <Perforation side="right" />
 
-      {/* flex-1 aqui e no papel: em altura automática não muda nada, mas quando
-          o fotograma é esticado (cards lado a lado numa grade) o papel cresce
-          junto e as marcações de borda ficam alinhadas entre os cards. */}
       <div className="mx-5 flex flex-1 flex-col border-x border-prussia-800/25 sm:mx-9">
-        {/* marcação de borda do negativo */}
         {markings ? (
           <div className="flex items-center justify-between px-5 py-1.5 font-mono text-[9px] tracking-[0.22em] text-paper-500 uppercase sm:px-8">
             <span>{edgeCode}</span>
             <span aria-hidden>▸ {frameNumber}</span>
           </div>
         ) : (
-          // Sem o selo, o papel encostaria no topo da moldura: a folga mantém
-          // a proporção de fotograma.
           <div aria-hidden className="h-2" />
         )}
 

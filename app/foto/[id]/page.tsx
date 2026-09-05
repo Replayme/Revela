@@ -17,10 +17,6 @@ import { formatCount, formatPrice, formatRating } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-// `generateStaticParams` saiu junto com o acervo em array: a página é
-// `force-dynamic` (ela mostra se você já comprou esta foto), então a lista de
-// ids não pré-gerava nada — só acrescentava uma consulta ao banco no build.
-
 export async function generateMetadata({
   params,
 }: {
@@ -33,9 +29,6 @@ export async function generateMetadata({
   return {
     title: `${photo.title} — ${photo.photographer.name}`,
     description,
-    // A foto é o produto: sem `og:image` o link colado no WhatsApp ou no Slack
-    // vira uma linha de texto, e ninguém clica numa linha de texto para ver
-    // uma foto.
     openGraph: {
       title: photo.title,
       description,
@@ -84,7 +77,6 @@ export default async function PhotoPage({
           </nav>
 
           <div className="mt-6 grid gap-10 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:gap-12">
-            {/* A foto: é o produto, então ocupa o lugar que merece. */}
             <div>
               <div
                 className="relative bg-prussia-950"
@@ -130,8 +122,6 @@ export default async function PhotoPage({
                     photo.orientation === 'vertical' ? 'Vertical' : 'Horizontal'
                   }
                 />
-                {/* Vinha fixo em "4096 × 2731 px": a mesma medida em toda
-                    foto, e de paisagem mesmo nas verticais. */}
                 <Dado
                   rotulo="Resolução"
                   valor={`${formatCount(photo.width)} × ${formatCount(photo.height)} px`}

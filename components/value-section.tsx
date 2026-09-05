@@ -10,8 +10,6 @@ const DIFERENCIAIS = [
     titulo: 'Taxa menor',
     descricao:
       '85% do valor de cada venda vai para quem fotografou. O resto paga a plataforma, e só.',
-    // O diferencial que sustenta os outros três: marcado com um filete âmbar,
-    // como os números da seção "Sobre". Um marcador, não enfeite.
     destaque: true,
   },
   {
@@ -37,14 +35,6 @@ const DIFERENCIAIS = [
   },
 ];
 
-/**
- * Fecho da home: por que publicar aqui, e o convite para criar conta.
- *
- * Fundo escuro de propósito. As seções acima são papel, e a virada para o azul
- * separa o bloco sem precisar de borda nem sombra — de quebra, é o contraste em
- * que o âmbar do botão rende mais. Sobre esse fundo, o texto secundário sai em
- * `paper-300`, não em `prussia-600`: azul escuro sobre azul escuro não se lê.
- */
 export function ValueSection() {
   const { ref, animar } = useRevelarNaViewport<HTMLElement>();
 
@@ -89,9 +79,6 @@ export function ValueSection() {
           </p>
           <Link
             href="/cadastro-fotografo"
-            // Só o fundo faz transição: `transition-colors` incluiria
-            // `outline-color`, e aí o anel de foco entraria desbotando em vez
-            // de aparecer inteiro na hora.
             className="inline-block shrink-0 bg-amber px-6 py-3.5 text-center text-sm font-bold tracking-[0.14em] text-prussia-950 uppercase transition-[background-color] hover:bg-amber-light"
           >
             Criar conta de fotógrafo
@@ -102,13 +89,6 @@ export function ValueSection() {
   );
 }
 
-/**
- * Marca o momento de animar a entrada — a seção fica no fim da página, então
- * animar na montagem seria animar fora da tela, sem ninguém ver.
- *
- * Antes de disparar, os itens ficam visíveis: se o JavaScript não rodar, a
- * seção continua legível em vez de sumir esperando um observador que não veio.
- */
 function useRevelarNaViewport<T extends HTMLElement>() {
   const ref = useRef<T>(null);
   const [animar, setAnimar] = useState(false);
@@ -123,8 +103,6 @@ function useRevelarNaViewport<T extends HTMLElement>() {
         setAnimar(true);
         observador.disconnect();
       },
-      // Dispara um pouco antes da seção aparecer: a animação começa do zero em
-      // vez de piscar por cima de conteúdo que já estava à vista.
       { rootMargin: '0px 0px 120px 0px' },
     );
 

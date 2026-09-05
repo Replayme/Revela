@@ -5,18 +5,11 @@ import { SiteFooter } from '@/components/site-footer';
 import { IconAlert } from '@/components/icons';
 
 export interface LegalSection {
-  /** Numeração visível: é por ela que se cita um trecho no suporte. */
   id: string;
   title: string;
   body: ReactNode;
 }
 
-/**
- * Casca comum dos documentos legais (termos, privacidade).
- *
- * A licença tem página própria porque o conteúdo dela vem de `lib/license.ts`
- * e é lido também pelo card da foto; aqui o texto é só texto.
- */
 export function LegalPage({
   kicker,
   title,
@@ -46,8 +39,6 @@ export function LegalPage({
             {intro}
           </div>
 
-          {/* O aviso vem antes do texto, não no rodapé: quem parar de ler no
-              meio precisa ter visto que isto ainda não passou pelo jurídico. */}
           <p className="mt-9 flex items-start gap-2.5 border border-dashed border-paper/25 px-4 py-3.5 text-sm text-paper-300">
             <IconAlert width={15} height={15} className="mt-0.5 shrink-0" />
             Redação de trabalho, ainda sem revisão jurídica. Antes de abrir o
@@ -82,7 +73,6 @@ export function LegalPage({
   );
 }
 
-/** Link interno dos documentos legais, com o sublinhado âmbar da casa. */
 export function LegalLink({
   href,
   children,

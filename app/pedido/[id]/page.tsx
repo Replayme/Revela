@@ -13,21 +13,9 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Recibo e licença',
-  robots: { index: false, follow: false }, // recibo é de quem comprou
+  robots: { index: false, follow: false }, 
 };
 
-/**
- * O recibo de um pedido: quem comprou, o que comprou, quanto pagou e sob qual
- * licença — mais o arquivo.
- *
- * Esta página é a prova da compra. É o que a pessoa manda para a agência que
- * vai usar a foto, e é onde ela confere que a licença cobre o uso pretendido.
- * Por isso ela repete o texto da licença em vez de só apontar para
- * `/licenca`: a página de licença mostra a versão de hoje, e o recibo precisa
- * mostrar a versão que foi aceita.
- *
- * Pedido de outra pessoa dá 404 — a busca já filtra pelo dono (`findOrderById`).
- */
 export default async function OrderPage({
   params,
 }: {
@@ -41,8 +29,7 @@ export default async function OrderPage({
   if (!order) notFound();
 
   const photo = await findSoldPhoto(order.photoId);
-  // Versão desconhecida só acontece se o texto sumir do código sem migração.
-  // Cai na atual com aviso, em vez de derrubar o recibo de uma compra real.
+
   const license = licenseByVersion(order.licenseVersion);
   const shown = license ?? UNIVERSAL_LICENSE;
 
@@ -105,8 +92,6 @@ export default async function OrderPage({
               </p>
             </div>
 
-            {/* Os dados do pedido. `dl` porque é exatamente isto: rótulo e
-                valor — e é o que um leitor de tela precisa ouvir em pares. */}
             <dl className="grid gap-px border border-paper/12 bg-paper/12 text-sm">
               <Row label="Pedido">
                 <span className="font-mono tabular-nums">{order.id}</span>

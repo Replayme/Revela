@@ -1,18 +1,5 @@
 import Link from 'next/link';
 
-/**
- * O rodapé do site.
- *
- * Antes existia só na home, e as páginas de foto, perfil, painel e licença
- * terminavam no vazio — sem termos, sem privacidade, sem contato. O rodapé é
- * onde essas coisas moram, e a lei espera achá-las em qualquer página.
- *
- * **Só entra aqui o que existe.** A versão anterior listava blog, planos,
- * central de ajuda, imprensa e direitos de imagem; nenhuma dessas rotas foi
- * escrita, e cada uma dava num 404. Link que promete e não entrega custa mais
- * que a coluna vazia — voltam para cá quando as páginas existirem.
- */
-
 const COLUNAS: { titulo: string; itens: { rotulo: string; href: string }[] }[] = [
   {
     titulo: 'Navegar',

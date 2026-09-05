@@ -7,10 +7,6 @@ import { IconStar } from '@/components/icons';
 import { findPhotographer, photosByPhotographer } from '@/lib/repository';
 import { formatCount, formatPrice, formatRating } from '@/lib/format';
 
-// `generateStaticParams` saiu: a página já renderiza sob demanda, então a
-// lista de ids não pré-gerava nada — só acrescentava uma consulta ao banco no
-// build, e com ela a chance de o deploy falhar porque o banco estava dormindo.
-
 export async function generateMetadata({
   params,
 }: {
@@ -47,7 +43,6 @@ export default async function PhotographerPage({
       <SiteHeader variant="auth" />
 
       <main id="conteudo" className="flex-1">
-        {/* Capa: um trabalho recente, como no card que trouxe a pessoa até aqui. */}
         <div className="relative h-[220px] bg-prussia-950 sm:h-[300px]">
           <Image
             src={photographer.coverPhotoUrl}
@@ -68,9 +63,6 @@ export default async function PhotographerPage({
         </div>
 
         <div className="mx-auto w-full max-w-[1180px] px-5 sm:px-8">
-          {/* `relative` aqui não é decoração: a capa é posicionada e pintaria
-              por cima deste bloco, cortando o nome que a margem negativa
-              sobrepõe a ela. */}
           <div className="relative -mt-12 flex flex-wrap items-end gap-5 sm:-mt-14">
             <div className="size-24 shrink-0 overflow-hidden border-[3px] border-paper bg-prussia-800 sm:size-28">
               <Image

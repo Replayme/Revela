@@ -7,23 +7,6 @@ import { IconAlert, IconCheck } from './icons';
 import { formatFileSize, formatPrice } from '@/lib/format';
 import type { Category } from '@/lib/model';
 
-/**
- * A tela de enviar foto — o formulário e o que acontece quando ele termina.
- *
- * **Falta o último elo, e o aviso disso está *antes* do formulário**, não
- * depois. Descobrir que o trabalho não vale no momento de apertar o botão é o
- * que transforma uma limitação conhecida em perda de tempo.
- *
- * `POST /api/fotos` já existe e grava a ficha. O que não existe é o bucket:
- * sem ele o navegador não tem para onde mandar o arquivo, e registrar a foto
- * assim mesmo colocaria no acervo um quadro quebrado com preço — exatamente o
- * tipo de mentira que o resto do site recusa.
- *
- * O que falta ligar aqui é o envio direto do navegador ao Vercel Blob
- * (`upload()` de `@vercel/blob/client`, autorizado por `/api/fotos/upload`) e,
- * depois dele, a chamada a `POST /api/fotos` com o caminho de onde o arquivo
- * ficou. O formulário já entrega a ficha pronta, medidas incluídas.
- */
 export function NewPhotoScreen({ categories }: { categories: Category[] }) {
   const [ficha, setFicha] = useState<PhotoDraft | null>(null);
 
@@ -48,11 +31,6 @@ export function NewPhotoScreen({ categories }: { categories: Category[] }) {
   );
 }
 
-/**
- * O aviso vem antes do formulário e diz o que falta em vez de só dizer que
- * falta: quem lê "depende do lugar onde o arquivo vai ser guardado" sabe se
- * isso é coisa de hoje ou de outro mês.
- */
 function AvisoDeEntrada() {
   return (
     <div className="mt-8 flex items-start gap-3 border-l-[3px] border-amber bg-amber/8 px-4 py-3.5">
@@ -71,12 +49,6 @@ function AvisoDeEntrada() {
   );
 }
 
-/**
- * O que sairia daqui.
- *
- * A ficha é mostrada inteira de propósito: é ela que prova que o formulário
- * apurou certo — sobretudo as medidas e a orientação, que ninguém digitou.
- */
 function FichaPronta({
   ficha,
   onNova,
@@ -86,12 +58,7 @@ function FichaPronta({
 }) {
   return (
     <div className="mt-9">
-      {/*
-        Verde de sinal sobre um véu escuro, e não o `Alert` do formulário:
-        aquele é um bloco claro, desenhado para o cartão das telas de acesso, e
-        aqui seria a única coisa clara de uma página escura — gritaria mais que
-        o aviso âmbar da entrada, que é o mais importante dos dois.
-      */}
+
       <div className="flex items-start gap-3 border-l-[3px] border-signal-ok bg-signal-ok/12 px-4 py-3.5">
         <IconCheck width={17} height={17} className="mt-0.5 shrink-0 text-signal-ok" />
         <div className="min-w-0 text-sm leading-relaxed text-paper-300">

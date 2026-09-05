@@ -11,17 +11,6 @@ import { IconAlert, IconCheck, IconEye, IconEyeOff } from './icons';
 import { useLocale } from './locale-provider';
 import { scorePassword } from '@/lib/validation';
 
-/* ------------------------------- campo base ------------------------------- */
-
-/**
- * Em que fundo o campo está.
- *
- * As telas de acesso são um cartão claro; o painel da conta é fundo prussiano.
- * O campo é o mesmo — mesma marcação, mesmo `aria`, mesmo espaço reservado
- * para a mensagem — e só a paleta muda. Uma segunda cópia do campo para o
- * painel divergiria desta no dia em que uma delas ganhasse um conserto de
- * acessibilidade.
- */
 type Tone = 'light' | 'dark';
 
 const TONE = {
@@ -44,14 +33,11 @@ const TONE = {
 interface BaseFieldProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'className'> {
   label: string;
-  /** Mensagem de erro já traduzida. `null` quando não há erro. */
   error?: string | null;
-  /** Mensagem de sucesso já traduzida, mostrada quando o campo está válido. */
   success?: string | null;
   hint?: string;
   trailing?: ReactNode;
   tone?: Tone;
-  /** React 19 aceita `ref` como prop normal em componentes de função. */
   ref?: Ref<HTMLInputElement>;
 }
 
@@ -117,7 +103,6 @@ export function TextField({
         </p>
       )}
 
-      {/* Espaço reservado: a mensagem entra sem empurrar o formulário. */}
       <p
         id={messageId}
         role={state === 'error' ? 'alert' : undefined}
@@ -134,8 +119,6 @@ export function TextField({
     </div>
   );
 }
-
-/* ---------------------------- campo de senha ------------------------------ */
 
 export function PasswordField({
   showStrength = false,
@@ -167,15 +150,12 @@ export function PasswordField({
           </button>
         }
       />
-      {/* Com erro em cena, o medidor sai: uma mensagem por vez. */}
       {showStrength && value.length > 0 && !props.error && (
         <StrengthMeter value={value} />
       )}
     </div>
   );
 }
-
-/* ------------------------- medidor de força da senha ---------------------- */
 
 export function StrengthMeter({ value }: { value: string }) {
   const { t } = useLocale();
@@ -226,22 +206,14 @@ export function StrengthMeter({ value }: { value: string }) {
   );
 }
 
-/* -------------------------------- checkbox -------------------------------- */
-
 export function Checkbox({
   label,
   hint,
   id,
   ...inputProps
 }: Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'className'> & {
-  /**
-   * Aceita conteúdo, não só texto: o aceite dos termos precisa dos links
-   * dentro da frase. Clicar num link dentro de um `<label>` navega em vez de
-   * marcar a caixa — a especificação isenta conteúdo interativo.
-   */
   label: ReactNode;
   hint?: string;
-  /** React 19 aceita `ref` como prop normal em componentes de função. */
   ref?: Ref<HTMLInputElement>;
 }) {
   const generatedId = useId();
@@ -266,8 +238,6 @@ export function Checkbox({
     </div>
   );
 }
-
-/* --------------------------------- alerta --------------------------------- */
 
 export function Alert({
   tone,
@@ -299,8 +269,6 @@ export function Alert({
   );
 }
 
-/* ------------------------------ botão primário ---------------------------- */
-
 export function SubmitButton({
   loading,
   loadingLabel,
@@ -331,7 +299,6 @@ export function SubmitButton({
       {loading && (
         <span aria-hidden className="anim-develop absolute inset-x-0 bottom-0 h-[3px]" />
       )}
-      {/* deslocamento de luz no hover */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/35 to-transparent transition-transform duration-700 group-hover:translate-x-full"

@@ -9,21 +9,6 @@ import { slugify } from '@/lib/slug';
 import type { Category, Photo } from '@/lib/model';
 import { formatPrice } from '@/lib/format';
 
-/**
- * A busca do acervo.
- *
- * Os filtros são os que o modelo do Revela tem de verdade: categoria,
- * orientação, teto de preço e ordenação. A versão anterior desta tela filtrava
- * por cor dominante, por resolução e por "grátis" — três coisas que não
- * existem aqui. O acervo tem preço único por arquivo e uma licença só; um
- * filtro que promete uma faceta inexistente é pior que filtro nenhum.
- *
- * O estado mora na URL, não no componente: `/explorar?termo=praia&categoria=
- * retrato` é uma busca que se manda por mensagem e que volta pelo botão de
- * voltar do navegador. É por isso que a home consegue linkar direto para uma
- * busca pronta.
- */
-
 type Ordenacao = 'relevancia' | 'preco-asc' | 'preco-desc' | 'avaliacao';
 
 const ORDENACOES: { id: Ordenacao; nome: string }[] = [
@@ -45,11 +30,6 @@ const normalizar = (valor: string) =>
     .replace(/[\u0300-\u036f]/g, '')
     .trim();
 
-/**
- * Casa todas as palavras da busca, em qualquer ordem, contra título, autor e
- * categoria. "praia ana" acha a foto da Ana na praia; a busca por substring
- * inteira não achava.
- */
 function combina(photo: Photo, termo: string): boolean {
   if (!termo) return true;
   const alvo = normalizar(
@@ -71,13 +51,6 @@ export function ArchiveSearch({
   const params = useSearchParams();
   const { favorites, toggle: alternarFavorita } = useFavorites();
 
-  /**
-   * Teto do controle de preço: a foto mais cara do acervo, arredondada pra
-   * cima. Era constante de módulo, calculada sobre o array importado; virou
-   * derivado da prop quando o acervo passou a vir do servidor. O acervo vazio
-   * precisa de um piso — sem ele, `Math.max()` de nada é `-Infinity` e o
-   * controle deslizante nasce quebrado numa loja que ainda não tem foto.
-   */
   const precoTeto = useMemo(
     () =>
       photos.length === 0
@@ -92,9 +65,6 @@ export function ArchiveSearch({
   const ordenar = (params.get('ordenar') ?? 'relevancia') as Ordenacao;
   const precoMax = Number(params.get('precoMax')) || precoTeto;
 
-  // O campo é controlado localmente e só empurra para a URL depois da pausa:
-  // uma entrada no histórico por tecla digitada tornaria o botão de voltar
-  // inútil.
   const [rascunho, setRascunho] = useState(termo);
   const campoRef = useRef<HTMLInputElement>(null);
 
@@ -113,8 +83,6 @@ export function ArchiveSearch({
     [params, router],
   );
 
-  // A URL pode mudar por fora (link da home, botão de voltar): o campo
-  // acompanha, mas não enquanto a pessoa está digitando nele.
   useEffect(() => {
     if (document.activeElement !== campoRef.current) setRascunho(termo);
   }, [termo]);
@@ -134,8 +102,6 @@ export function ArchiveSearch({
         photo.price <= precoMax,
     );
 
-    // `toSorted` deixaria `filtradas` intacta, mas ela já é uma cópia do
-    // `filter` — ordenar no lugar não toca no acervo.
     switch (ordenar) {
       case 'preco-asc':
         return filtradas.sort((a, b) => a.price - b.price);
@@ -204,8 +170,7 @@ export function ArchiveSearch({
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-paper/12 pb-4">
-            {/* `aria-live`: quem navega por leitor de tela precisa saber que a
-                contagem mudou depois de mexer num filtro. */}
+
             <p aria-live="polite" className="text-sm text-paper-300">
               <strong className="font-mono font-semibold text-paper tabular-nums">
                 {resultados.length}
@@ -258,15 +223,14 @@ function Filtros({
   categoria: string;
   orientacao: string;
   precoMax: number;
-  /** Teto do controle de preço, derivado do acervo — ver `ArchiveSearch`. */
+
   precoTeto: number;
   filtrando: boolean;
   aoMudar: (mudancas: Record<string, string | null>) => void;
   aoLimpar: () => void;
 }) {
   return (
-    // No celular os filtros ficam recolhidos: numa tela estreita eles
-    // empurrariam as fotos para baixo da dobra, e é a foto que a pessoa veio ver.
+
     <details className="group border border-paper/12 lg:border-0 [&>summary]:lg:hidden [&:not([open])>div]:lg:block">
       <summary className="cursor-pointer list-none px-4 py-3 text-[11px] font-semibold tracking-[0.16em] text-paper uppercase marker:content-none">
         Filtros

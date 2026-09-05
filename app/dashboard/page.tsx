@@ -14,27 +14,13 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Minha conta',
-  robots: { index: false, follow: false }, // tela de conta
+  robots: { index: false, follow: false }, 
 };
 
-/**
- * O painel da conta: as licenças que a pessoa comprou.
- *
- * Até aqui a compra emitia uma licença que não tinha onde ser vista — o pedido
- * ficava registrado e o arquivo, em lugar nenhum. Esta é a outra metade da
- * transação: a lista do que é seu, o recibo de cada item e o arquivo para
- * baixar.
- *
- * Rota protegida: sem sessão válida, volta para o login carregando o caminho
- * de volta. Em produção a mesma checagem tem que existir no `middleware.ts`,
- * para acontecer antes de qualquer render.
- */
 export default async function DashboardPage() {
   const session = await currentSession();
   if (!session) redirect(`/login?next=${encodeURIComponent('/dashboard')}`);
 
-  // Um pedido cuja foto saiu do acervo não some da lista: a licença é
-  // perpétua, e o que foi comprado continua sendo da pessoa.
   const orders = await Promise.all(
     (await ordersByUser(session.sub)).map(async (order) => ({
       order,
@@ -177,10 +163,6 @@ export default async function DashboardPage() {
   );
 }
 
-/**
- * O vazio tem uma saída. Uma conta sem licença nenhuma é o estado normal de
- * quem acabou de se cadastrar, não um erro.
- */
 function EmptyState() {
   return (
     <div className="mt-7 border border-dashed border-paper/20 px-6 py-14 text-center">

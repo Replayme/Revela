@@ -7,45 +7,12 @@ import { IconCheck } from './icons';
 import { formatCount, formatPrice } from '@/lib/format';
 import type { PhotographerPhoto } from '@/lib/photographer-panel';
 
-/**
- * Tirar uma foto do acervo — despublicar ou remover.
- *
- * **As duas moram na mesma tela de propósito.** Não são dois assuntos: são o
- * mesmo, com pesos diferentes, e o erro que essa tela existe para evitar é
- * remover querendo despublicar. Separá-las em duas telas esconderia justamente
- * a comparação que precisa ser feita — quem chega aqui já decidiu tirar a foto
- * da venda, e o que falta decidir é se isso tem volta.
- *
- * Por isso despublicar vem primeiro e leva o botão cheio: é a escolha certa na
- * dúvida, e desempata a favor do que se desfaz.
- *
- * **A licença já emitida não volta atrás em nenhuma das duas.** É a parte não
- * óbvia, e a que muda o que "remover" quer dizer aqui: remover tira a foto da
- * venda, não das mãos de quem comprou. Um fotógrafo que espera o contrário
- * precisa descobrir isso antes de clicar, não depois.
- *
- * Nada é gravado — falta `PATCH` e `DELETE` por id — e o aviso disso está na
- * entrada, como nas outras telas do painel.
- */
 export function RemovePhotoScreen({ photo }: { photo: PhotographerPhoto }) {
   const router = useRouter();
   const [feito, setFeito] = useState<'despublicar' | 'remover' | null>(null);
   const [emCurso, setEmCurso] = useState<'despublicar' | 'remover' | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
-  /**
-   * Duas ações, dois verbos HTTP, e é a diferença entre elas que decide qual.
-   *
-   * Despublicar é uma mudança de estado da ficha: `PATCH` com
-   * `status: 'rascunho'`. A foto continua no painel e volta à venda quando o
-   * autor quiser.
-   *
-   * Remover tira do acervo: `DELETE`. Que, no servidor, também não apaga linha
-   * nenhuma — grava `removed_at`, porque a licença de quem já comprou é
-   * perpétua e o recibo precisa continuar resolvendo. "Não tem volta" é
-   * verdade para o autor, e é o que a tela promete; o que não se pode é apagar
-   * a venda junto.
-   */
   async function executar(acao: 'despublicar' | 'remover') {
     setEmCurso(acao);
     setErro(null);
@@ -70,8 +37,6 @@ export function RemovePhotoScreen({ photo }: { photo: PhotographerPhoto }) {
         return;
       }
 
-      // O painel é servido pelo servidor: sem o `refresh`, voltar para
-      // "minhas fotos" mostraria a foto ainda lá, vinda do cache do roteador.
       router.refresh();
       setFeito(acao);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -133,12 +98,6 @@ export function RemovePhotoScreen({ photo }: { photo: PhotographerPhoto }) {
   );
 }
 
-/**
- * O que **não** muda — e é o que mais surpreende.
- *
- * Fica acima das duas opções porque vale para as duas, e porque quem lê isso
- * depois de escolher já escolheu com a informação errada.
- */
 function LicencasSeguem({ photo }: { photo: PhotographerPhoto }) {
   if (photo.sales === 0) {
     return (
@@ -149,12 +108,6 @@ function LicencasSeguem({ photo }: { photo: PhotographerPhoto }) {
     );
   }
 
-  /*
-    A oração inteira troca de número, e não pedaços dela costurados por
-    concatenação: foi montando "não altera as licença já emitida, que valem"
-    dessa segunda maneira que a tela de edição nasceu com a concordância
-    quebrada. Duas frases inteiras não têm como discordar entre si.
-  */
   const frase =
     photo.sales === 1
       ? `Uma pessoa já licenciou esta foto, por ${formatPrice(photo.revenue)}. Essa licença é perpétua e não se desfaz por aqui: quem comprou continua podendo usar o arquivo, sem prazo, em qualquer meio.`
@@ -176,13 +129,6 @@ function LicencasSeguem({ photo }: { photo: PhotographerPhoto }) {
   );
 }
 
-/**
- * Uma das duas saídas, com o que ela custa listado antes do botão.
- *
- * A confirmação é em dois toques, no lugar do `window.confirm`: o diálogo do
- * navegador não tem onde caber a pergunta com o nome da foto dentro, e é o
- * nome que faz alguém perceber que está na ficha errada.
- */
 function Opcao({
   titulo,
   resumo,
@@ -200,9 +146,9 @@ function Opcao({
   rotuloBotao: string;
   perguntaConfirmacao: string;
   tom: 'normal' | 'risco';
-  /** Esta ação está em andamento — é a que muda de rótulo. */
+
   emCurso: boolean;
-  /** Alguma ação está em andamento: as duas travam, para não sair as duas. */
+
   desabilitado: boolean;
   onConfirmar: () => void;
 }) {
@@ -289,7 +235,6 @@ function Opcao({
   );
 }
 
-/** O que teria acontecido — e a lembrança de que não aconteceu. */
 function Resultado({
   acao,
   photo,

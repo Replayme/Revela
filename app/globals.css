@@ -1,37 +1,26 @@
 @import 'tailwindcss';
 
-/* ------------------------------------------------------------------ */
-/*  Revela — sistema visual                                            */
-/*  Cianotipia + papel de laboratório.                                 */
-/*  Azul da Prússia = estrutura. Papel = superfície de leitura.        */
-/*  Âmbar de luz de segurança = SOMENTE ações. Nunca decoração.        */
-/* ------------------------------------------------------------------ */
-
 @theme {
-  /* Azul da Prússia */
   --color-prussia-950: #08131d;
   --color-prussia-900: #0d2032;
-  --color-prussia-800: #132b40; /* base da marca */
+  --color-prussia-800: #132b40;
   --color-prussia-700: #1c3d57;
   --color-prussia-600: #2a5678;
   --color-prussia-500: #3d6f95;
   --color-prussia-400: #6b93b0;
   --color-prussia-300: #9db8cc;
 
-  /* Papel cinza-frio */
   --color-paper-50: #f4f5f2;
-  --color-paper: #e9ebe6; /* base da marca */
+  --color-paper: #e9ebe6;
   --color-paper-200: #dcdfd7;
   --color-paper-300: #c7ccc0;
   --color-paper-400: #a8ae9f;
   --color-paper-500: #7e857a;
 
-  /* Âmbar de luz de segurança — ações */
   --color-amber-light: #f0c163;
-  --color-amber: #e0a32e; /* base da marca */
+  --color-amber: #e0a32e;
   --color-amber-deep: #b47f18;
 
-  /* Sinalização */
   --color-signal-error: #b23a2b;
   --color-signal-error-soft: #f2d9d4;
   --color-signal-ok: #3f6b52;
@@ -43,8 +32,6 @@
 
   --radius-frame: 2px;
 }
-
-/* --- Base --------------------------------------------------------- */
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -58,13 +45,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Foco visível e consistente — acessibilidade */
 :where(a, button, input, select, textarea, [tabindex]):focus-visible {
   outline: 2px solid var(--color-amber);
   outline-offset: 2px;
 }
 
-/* Barra de rolagem oculta na navegação horizontal do header em telas pequenas */
 .scrollbar-none {
   scrollbar-width: none;
 }
@@ -72,9 +57,6 @@ body {
   display: none;
 }
 
-/* --- Texturas ----------------------------------------------------- */
-
-/* Grão de cianotipia: ruído sutil sobre o azul */
 .tex-cyanotype {
   background-image:
     radial-gradient(
@@ -94,7 +76,6 @@ body {
     );
 }
 
-/* Folha de contato: grade fina de negativo */
 .tex-contact-sheet {
   background-image:
     linear-gradient(to right, rgba(233, 235, 230, 0.07) 1px, transparent 1px),
@@ -102,7 +83,6 @@ body {
   background-size: 72px 96px;
 }
 
-/* Fibra do papel */
 .tex-paper {
   background-image: repeating-linear-gradient(
       92deg,
@@ -119,8 +99,6 @@ body {
       transparent 4px
     );
 }
-
-/* --- Movimento ---------------------------------------------------- */
 
 @keyframes revela-reveal {
   from {
@@ -169,7 +147,6 @@ body {
   animation: revela-shake 380ms ease-in-out both;
 }
 
-/* Barra de "revelação" usada no estado de carregamento do botão */
 .anim-develop {
   background-image: linear-gradient(
     100deg,

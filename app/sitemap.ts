@@ -2,20 +2,8 @@ import type { MetadataRoute } from 'next';
 import { listCategories, listPhotographers, listPhotos } from '@/lib/repository';
 import { siteUrl } from '@/lib/site';
 
-/**
- * O mapa do site para os buscadores.
- *
- * Gerado das mesmas fontes que as páginas usam, e não de uma lista à mão: uma
- * lista paralela envelhece calada — some uma foto do acervo e o sitemap segue
- * anunciando a URL por meses.
- *
- * As telas de conta não entram (já são `noindex` por página, e o `robots.ts`
- * também as bloqueia). Quando o acervo vier do banco, isto vira uma consulta;
- * acima de 50 mil URLs o Next quer o sitemap dividido em vários.
- */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // As três em paralelo: o mapa do site é uma página só, e enfileirar somaria
-  // três idas ao banco na geração dele.
+
   const [photos, categories, photographers] = await Promise.all([
     listPhotos(),
     listCategories(),

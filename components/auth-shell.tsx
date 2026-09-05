@@ -5,7 +5,6 @@ import { SiteHeader } from './site-header';
 import { useLocale } from './locale-provider';
 import { IconLock } from './icons';
 
-/** Moldura comum das telas de acesso: header de duas faixas + campo de cianotipia. */
 export function AuthShell({ children }: { children: ReactNode }) {
   const { t } = useLocale();
 
@@ -35,12 +34,6 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
 function EditorialAside() {
   const { t } = useLocale();
-  /*
-    Eram "2.400 fotógrafos", "910 mil fotos" e "85% de repasse" — inventados, e
-    o repasse ainda contradizia o "0% de comissão" que a home afirma na mesma
-    voz. No lugar entram três fatos que o código sustenta: a licença única
-    (`lib/license.ts`), a perpetuidade dela e a política de comissão.
-  */
   const stats = {
     license: '1',
     term: '∞',
@@ -83,7 +76,6 @@ function Stat({ value, label }: { value: string; label: string }) {
   );
 }
 
-/** Folha de contato decorativa — negativos, não fotografias reais. */
 function ContactSheet() {
   const tiles = [
     'from-prussia-600 to-prussia-950',

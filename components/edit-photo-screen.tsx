@@ -9,22 +9,6 @@ import { formatFileSize, formatPrice } from '@/lib/format';
 import type { Category } from '@/lib/model';
 import type { PhotographerPhoto } from '@/lib/photographer-panel';
 
-/**
- * A tela de editar a ficha de uma foto que já está no acervo.
- *
- * Ela mostra **o que mudaria** antes de salvar, e não a ficha inteira: numa
- * edição o que importa é a diferença. Uma lista com os cinco campos repetidos
- * esconde, no meio dos iguais, o único que foi mexido — e é justamente ele que
- * a pessoa quer conferir.
- *
- * A conferência continua sendo um passo à parte, e não virou "salvar direto",
- * porque a razão dela não era a falta da rota: mudar o preço de uma foto que
- * já vendeu é o tipo de coisa que se quer ver escrita antes de confirmar.
- *
- * **Trocar o arquivo ainda não funciona** — falta o lugar onde guardá-lo. O
- * aviso de entrada diz isso, e o resultado repete no momento em que a troca é
- * detectada, porque é lá que a pessoa descobre que aquele campo não vale.
- */
 export function EditPhotoScreen({
   photo,
   categories,
@@ -45,14 +29,6 @@ export function EditPhotoScreen({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /**
-   * Manda só o que mudou.
-   *
-   * O `PATCH` é parcial de propósito (ver `lib/photo-validation.ts`), então
-   * enviar a ficha inteira gravaria `updated_at` numa foto em que só o preço
-   * mexeu — e, pior, sobrescreveria com o valor antigo um campo que outra aba
-   * tivesse acabado de mudar.
-   */
   async function salvar() {
     if (!rascunho) return;
     setSalvando(true);
@@ -80,9 +56,6 @@ export function EditPhotoScreen({
         return;
       }
 
-      // `refresh()` antes de sair: sem ele a lista de minhas fotos viria do
-      // cache do roteador e mostraria o título antigo por um instante, que
-      // parece exatamente com "não salvou".
       router.refresh();
       router.push('/dashboard/minhas-fotos');
     } catch {
@@ -151,13 +124,6 @@ interface Mudanca {
   para: string;
 }
 
-/**
- * O que mudou entre a ficha do acervo e a que saiu do formulário.
- *
- * O arquivo entra na lista só quando é trocado: `file` vem `null` quando a
- * pessoa não mexeu nele, e é por isso que o formulário aceita edição sem
- * exigir um arquivo novo.
- */
 function compararComOriginal(
   photo: PhotographerPhoto,
   draft: PhotoDraft,
@@ -204,8 +170,7 @@ function Resultado({
   onVoltarAoFormulario: () => void;
 }) {
   const semMudanca = mudancas.length === 0;
-  // Só o arquivo mudou: não há nada que o PATCH possa gravar, e oferecer
-  // "Salvar" seria oferecer um botão que não faz nada.
+
   const nadaASalvar = semMudanca || (arquivoTrocado && mudancas.length === 1);
 
   return (
@@ -255,11 +220,7 @@ function Resultado({
                 {mudanca.campo}
               </dt>
               <dd className="grid min-w-0 gap-1">
-                {/*
-                  O valor antigo fica riscado e apagado, o novo em cheio. Só a
-                  seta não bastaria: quem não distingue as duas colunas de
-                  relance lê a mudança ao contrário.
-                */}
+
                 <span className="break-words text-paper-500 line-through decoration-paper/40">
                   {mudanca.de}
                 </span>

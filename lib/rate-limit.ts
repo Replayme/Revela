@@ -1,15 +1,3 @@
-/**
- * Rate limiting em memória — SOMENTE PARA DEMONSTRAÇÃO.
- *
- * Em produção isto vive no Redis/Upstash ou no gateway (Cloudflare, nginx),
- * nunca na memória do processo Node: com mais de uma instância cada uma teria
- * sua própria contagem e o limite deixaria de valer. Ver docs/API.md.
- *
- * Duas camadas, como pedido:
- *  1. Rate limit por (IP + e-mail): 5 tentativas em 15 minutos.
- *  2. Proteção contra força bruta por IP: 15 falhas em 15 minutos → bloqueio de 30 min.
- */
-
 export const MAX_ATTEMPTS = 5;
 export const WINDOW_MS = 15 * 60 * 1000;
 
@@ -17,7 +5,7 @@ export const IP_MAX_FAILURES = 15;
 export const IP_BLOCK_MS = 30 * 60 * 1000;
 
 interface Bucket {
-  failures: number[]; // timestamps
+  failures: number[];
   blockedUntil?: number;
 }
 
@@ -38,9 +26,7 @@ function prune(bucket: Bucket, windowMs: number, now: number) {
 
 export interface LimitStatus {
   blocked: boolean;
-  /** Segundos até poder tentar de novo. */
   retryAfterSeconds: number;
-  /** Tentativas restantes na janela atual. */
   attemptsLeft: number;
   reason?: 'RATE_LIMITED' | 'IP_BLOCKED';
 }
@@ -51,7 +37,6 @@ const ok: LimitStatus = {
   attemptsLeft: MAX_ATTEMPTS,
 };
 
-/** Consulta o estado antes de verificar a senha. Não conta tentativa. */
 export function checkLimits(ip: string, email: string): LimitStatus {
   const now = Date.now();
 
@@ -84,7 +69,6 @@ export function checkLimits(ip: string, email: string): LimitStatus {
   };
 }
 
-/** Registra uma falha de autenticação e devolve o novo estado. */
 export function registerFailure(ip: string, email: string): LimitStatus {
   const now = Date.now();
 
@@ -104,12 +88,10 @@ export function registerFailure(ip: string, email: string): LimitStatus {
   return checkLimits(ip, email);
 }
 
-/** Login bem-sucedido zera a contagem daquele par IP+e-mail. */
 export function clearFailures(ip: string, email: string) {
   buckets.delete(`user:${ip}:${email.toLowerCase()}`);
 }
 
-/** Extrai o IP do cliente respeitando proxies confiáveis. */
 export function clientIp(headers: Headers): string {
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) return forwarded.split(',')[0].trim();

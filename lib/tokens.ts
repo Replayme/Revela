@@ -1,44 +1,17 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
-/**
- * Tudo que o servidor assina com a sua chave: o token de sessão e o token de
- * redefinição de senha.
- *
- * Os dois vivem no mesmo arquivo porque dependem do mesmo segredo, e um
- * segredo com dois donos é um segredo que um dia é lido de dois lugares
- * diferentes. Nenhuma das duas funções toca o armazenamento — é o que permite
- * que a implementação em memória e a do Postgres usem exatamente estas, sem
- * cópia.
- */
-
 const AUTH_SECRET =
   process.env.AUTH_SECRET ?? 'dev-only-secret-troque-em-producao';
 
-export const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas
+export const RESET_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; 
 
-/* ------------------------------ reset token ------------------------------ */
-
-/**
- * O que vai para o banco.
- *
- * O valor bruto só existe no e-mail: quem lê a tabela de tokens não consegue
- * redefinir a senha de ninguém. HMAC e não SHA-256 puro porque o hash de um
- * token é curto e previsível em formato — com a chave no meio, uma tabela
- * roubada não é atacável offline sem também roubar o `AUTH_SECRET`.
- *
- * Consequência aceita: rotacionar o `AUTH_SECRET` invalida os tokens de reset
- * em aberto. São 24 horas de validade; quem estava no meio do fluxo pede outro.
- */
 export function hashResetToken(token: string): string {
   return createHmac('sha256', AUTH_SECRET).update(token).digest('hex');
 }
 
-/** O valor bruto, que só quem recebe o e-mail vê. 32 bytes, base64url. */
 export function newResetToken(): string {
   return randomBytes(32).toString('base64url');
 }
-
-/* -------------------------------- sessão --------------------------------- */
 
 export interface SessionPayload {
   sub: string;
@@ -47,14 +20,6 @@ export interface SessionPayload {
   exp: number;
 }
 
-/**
- * Token de sessão assinado (HMAC-SHA256), no mesmo formato de um JWT compacto.
- *
- * ⚠️ Em produção use `jose`/`jsonwebtoken` com chave rotacionável e, se houver
- * refresh token, guarde-o no servidor para poder revogar. Hoje não há como
- * derrubar uma sessão antes do `exp` — o logout só apaga o cookie do
- * navegador, e um token copiado antes disso continua valendo.
- */
 export function issueSessionToken(
   user: { id: string; name: string; email: string },
   remember: boolean,

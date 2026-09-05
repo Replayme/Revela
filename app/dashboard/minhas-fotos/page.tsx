@@ -14,23 +14,9 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Minhas fotos',
-  robots: { index: false, follow: false }, // tela de conta
+  robots: { index: false, follow: false },
 };
 
-/**
- * O painel de quem publica — a outra metade de `/dashboard`, que até aqui só
- * sabia da conta de quem compra.
- *
- * **É uma tela de leitura, e de propósito.** Publicar, despublicar, editar e
- * remover não têm para onde ir: não existe `POST /api/fotos` nem `PATCH` por
- * id, e o arquivo enviado não teria onde ser guardado. Então os botões não
- * aparecem — os componentes já seguem essa regra, a mesma do botão de
- * favoritar no card do acervo. Uma tela que oferece "Publicar" e não publica é
- * pior que uma tela que ainda não oferece.
- *
- * O que ela mostra é verdade conferível: as fotos que estão no acervo, e as
- * vendas contadas nos pedidos que existem de fato.
- */
 export default async function MinhasFotosPage() {
   const session = await currentSession();
   if (!session) {
@@ -81,13 +67,6 @@ function Painel({ painel }: { painel: NonNullable<Awaited<ReturnType<typeof pain
 
   return (
     <>
-      {/*
-        A assinatura é dita porque pode não ser o nome da conta — e no acervo
-        de demonstração não é: quem entra como Ana Ribeiro assina Ana Vilar.
-        Isso não é defeito do vínculo, é como fotógrafo trabalha: o nome da
-        conta é de quem recebe, a assinatura é de quem fotografa. A tela
-        precisa dizer qual dos dois vai sair embaixo da foto.
-      */}
       <p className="mt-3 text-paper-300">
         No acervo, suas fotos assinam{' '}
         <Link
@@ -134,14 +113,6 @@ function Painel({ painel }: { painel: NonNullable<Awaited<ReturnType<typeof pain
           <ul className="mt-7 grid gap-4">
             {photos.map((photo) => (
               <li key={photo.id}>
-                {/*
-                  `editHref` entra agora que a tela existe — antes dela o card
-                  ficava sem ação nenhuma, porque um link para uma tela
-                  inexistente seria o décimo link morto do site.
-                  `onToggleStatus` e `onDelete` continuam de fora: dependem de
-                  rotas que gravam, e o card esconde o controle que ninguém
-                  atende.
-                */}
                 <PhotographerPhotoCard
                   photo={photo}
                   editHref={`/dashboard/foto/${photo.id}`}
@@ -157,7 +128,6 @@ function Painel({ painel }: { painel: NonNullable<Awaited<ReturnType<typeof pain
   );
 }
 
-/** Autor sem nenhuma foto no acervo — possível, e não é o mesmo que erro. */
 function AcervoVazio() {
   return (
     <div className="mt-7 border border-dashed border-paper/20 px-6 py-14 text-center">
@@ -173,12 +143,6 @@ function AcervoVazio() {
   );
 }
 
-/**
- * O que a tela ainda não faz, dito na própria tela.
- *
- * Não é rodapé de cortesia: quem abre um painel de vendas e não acha o botão
- * de publicar precisa saber se ele está escondido ou se ainda não existe.
- */
 function PorVir() {
   return (
     <section className="mt-14 border-t border-paper/12 pt-7">

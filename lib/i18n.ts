@@ -1,9 +1,3 @@
-/**
- * i18n mínimo, sem dependências.
- * Para escalar (mais idiomas, plurais, datas), troque por next-intl mantendo
- * as mesmas chaves — a estrutura abaixo já é compatível.
- */
-
 export const LOCALES = ['pt', 'en'] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'pt';
@@ -13,7 +7,6 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   en: 'English',
 };
 
-/** Rótulo curto para o seletor no header, onde o espaço é apertado. */
 export const LOCALE_SHORT: Record<Locale, string> = {
   pt: 'PT',
   en: 'EN',

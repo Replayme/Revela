@@ -6,13 +6,6 @@ import { isValidEmail } from '@/lib/validation';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * POST /api/auth/forgot-password — MOCK.
- *
- * Responde SEMPRE 200, exista a conta ou não. Aqui não há escolha: dizer
- * "e-mail não encontrado" nesta tela entrega uma lista de clientes a qualquer
- * um que peça. O e-mail (ou a ausência dele) é que informa a pessoa.
- */
 export async function POST(request: Request) {
   const ip = clientIp(request.headers);
 
@@ -28,7 +21,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'VALIDATION' }, { status: 400 });
   }
 
-  // Limite próprio: pedir reset também é um vetor de abuso (spam de e-mail).
   const limits = checkLimits(ip, `reset:${email}`);
   if (limits.blocked) {
     return NextResponse.json(
@@ -48,13 +40,13 @@ export async function POST(request: Request) {
 
   if (user && !user.disabled) {
     const token = await createResetToken(user.id);
-    // Em produção: enfileirar o e-mail com este link e NÃO devolvê-lo na resposta.
+
     devResetUrl = `/redefinir-senha?token=${token}`;
   }
 
   return NextResponse.json({
     ok: true,
-    // Presente apenas fora de produção, para conseguir testar o fluxo sem e-mail.
+
     ...(process.env.NODE_ENV !== 'production' && devResetUrl
       ? { devResetUrl }
       : {}),

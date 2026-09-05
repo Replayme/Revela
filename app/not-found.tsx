@@ -8,14 +8,6 @@ export const metadata = {
   robots: { index: false, follow: true },
 };
 
-/**
- * O 404 do site.
- *
- * Sem esta página, todo endereço errado caía no 404 cru do Next: fundo branco,
- * fonte do sistema, nenhum header e nenhuma saída. Quem erra o endereço de uma
- * foto continua querendo achar uma foto — daí o caminho para o acervo em vez
- * de um "voltar" genérico.
- */
 export default function NotFound() {
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">

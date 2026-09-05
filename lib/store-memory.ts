@@ -16,21 +16,6 @@ import type {
   User,
 } from './model';
 
-/**
- * "Banco" em memória — SOMENTE PARA DESENVOLVIMENTO E DEMONSTRAÇÃO.
- * Some a cada restart do servidor.
- *
- * Continua aqui, depois do banco existir, por um motivo prático: quem
- * clona o repositório para mexer numa tela roda `npm run dev` e o site
- * funciona, com contas de demonstração e tudo, sem provisionar banco nenhum.
- * O `lib/repository.ts` escolhe um dos dois pela configuração.
- *
- * Não use em produção, e não é só pelo restart: em serverless cada instância
- * tem a sua memória, então duas requisições seguidas podem cair em processos
- * diferentes e discordar sobre o que existe. O cadastro feito numa instância
- * simplesmente não existe na outra.
- */
-
 interface ResetRecord {
   userId: string;
   tokenHash: string;
@@ -38,15 +23,6 @@ interface ResetRecord {
   usedAt?: number;
 }
 
-/**
- * A foto como a memória a guarda: a de sempre, mais a marca de remoção.
- *
- * `removedAt` não está em `StoredPhoto` de propósito. No Postgres ele é uma
- * coluna que as consultas filtram e nunca devolvem; deixá-lo no tipo público
- * convidaria cada tela a escrever o seu próprio `if (foto.removedAt)`, que é
- * exatamente a regra que deve morar num lugar só. O `publico()` abaixo o tira
- * na saída, para as duas implementações devolverem a mesma coisa.
- */
 interface FotoNaMemoria extends StoredPhoto {
   removedAt?: number;
 }
@@ -54,37 +30,25 @@ interface FotoNaMemoria extends StoredPhoto {
 interface MemoryStore {
   users: User[];
   orders: Order[];
-  /** Cópia mutável do acervo: editar e remover no painel precisam de onde escrever. */
+
   photos: FotoNaMemoria[];
   photographers: Photographer[];
   resetTokens: Map<string, ResetRecord>;
-  /** Favoritos por usuário: id do usuário → ids das fotos. */
+
   favorites: Map<string, Set<string>>;
 }
 
-/**
- * Estado mutável guardado no `globalThis`.
- *
- * Rotas de API e componentes de servidor são empacotados separadamente: cada
- * bundle carrega a sua cópia deste módulo, com o seu próprio array. Sem um
- * ponto comum, a compra registrada pela rota some quando a página vai ler —
- * foi exatamente o que aconteceu no teste. `globalThis` é o mesmo objeto para
- * todos os bundles do processo. O cliente do Postgres usa o mesmo truque, pelo
- * mesmo motivo (ver `lib/db.ts`).
- */
 const globalStore = globalThis as typeof globalThis & {
   __revelaMemoryStore?: MemoryStore;
 };
 
-// Contas de demonstração. A senha nasce hasheada aqui como nasceria no banco.
 const seedUsers: User[] = [
   {
     id: 'usr_ana',
     name: 'Ana Ribeiro',
     email: 'ana@revela.com',
     passwordHash: hashPassword('Revela@2026'),
-    // O vínculo que era um mapa de e-mail para id de autor escrito à mão.
-    // Agora é um campo, aqui e na coluna `users.photographer_id`.
+
     photographerId: SEED_AUTOR_DA_ANA,
   },
   {
@@ -105,9 +69,7 @@ const seedUsers: User[] = [
 const store: MemoryStore = (globalStore.__revelaMemoryStore ??= {
   users: seedUsers,
   orders: [],
-  // Cópias rasas: editar uma foto no painel não pode alterar a semente, senão
-  // o `npm run dev` seguinte já começaria com a alteração dentro do "acervo
-  // original" e não haveria como voltar sem reiniciar o editor.
+
   photos: seedPhotos.map((foto) => ({ ...foto })),
   photographers: seedPhotographers.map((autor) => ({ ...autor })),
   resetTokens: new Map(),
@@ -120,15 +82,6 @@ export const memoryStore: Store = {
     return store.users.find((u) => u.email === normalized);
   },
 
-  /**
-   * O e-mail é normalizado antes de virar chave: sem isso "Ana@Revela.com"
-   * abriria uma segunda conta e ninguém mais conseguiria entrar em nenhuma das
-   * duas com certeza.
-   *
-   * A verificação de unicidade abaixo é o que dá para fazer com um array —
-   * entre o `find` e o `push` cabe outra requisição. No Postgres quem garante
-   * é a restrição de unicidade, que é o jeito certo; ver `store-postgres.ts`.
-   */
   async createUser(input): Promise<CreateUserResult> {
     const email = input.email.trim().toLowerCase();
     if (store.users.some((u) => u.email === email)) {
@@ -152,7 +105,6 @@ export const memoryStore: Store = {
     return true;
   },
 
-  /** Devolve o valor bruto — só ele vai no e-mail; o banco guarda o hash. */
   async createResetToken(userId) {
     const token = newResetToken();
     const tokenHash = hashResetToken(token);
@@ -193,30 +145,16 @@ export const memoryStore: Store = {
     return store.orders.find((o) => o.userId === userId && o.photoId === photoId);
   },
 
-  /**
-   * Do mais recente para o mais antigo — é a ordem em que o painel lista as
-   * licenças.
-   */
   async ordersByUser(userId) {
     return store.orders
       .filter((o) => o.userId === userId)
       .sort((a, b) => b.createdAt - a.createdAt);
   },
 
-  /**
-   * Um pedido pelo id, **já filtrado pelo dono**. A busca recebe o usuário de
-   * propósito: um `findById` puro deixaria a checagem de dono a cargo de quem
-   * chama, e é assim que um dia alguém lê o recibo de outra pessoa trocando o
-   * id na URL.
-   */
   async findOrderById(userId, orderId) {
     return store.orders.find((o) => o.id === orderId && o.userId === userId);
   },
 
-  /**
-   * Os pedidos das fotos de um autor. O `userId` vem junto porque está no
-   * `Order` — mas a tela de vendas não o mostra. Ver `lib/model.ts`.
-   */
   async ordersByAuthor(photographerId) {
     const fotos = new Set(
       store.photos.filter((f) => f.photographer.id === photographerId).map((f) => f.id),
@@ -241,14 +179,6 @@ export const memoryStore: Store = {
     return porFoto;
   },
 
-  /**
-   * Favoritar é de quem favorita.
-   *
-   * Antes `isFavorited` era campo da foto, no catálogo: o mesmo coração para
-   * todo visitante, igual para quem nunca entrou, e perdido no reload. Salvar
-   * uma foto só quer dizer alguma coisa se for a *sua* lista — daí a chave ser
-   * o usuário.
-   */
   async favoritesByUser(userId) {
     return [...(store.favorites.get(userId) ?? [])];
   },
@@ -257,7 +187,6 @@ export const memoryStore: Store = {
     return store.favorites.get(userId)?.has(photoId) ?? false;
   },
 
-  /** Alterna e devolve o estado que ficou, que é o que a tela precisa saber. */
   async toggleFavorite(userId, photoId) {
     const atuais = store.favorites.get(userId) ?? new Set<string>();
     const favoritada = !atuais.has(photoId);
@@ -268,8 +197,6 @@ export const memoryStore: Store = {
     store.favorites.set(userId, atuais);
     return favoritada;
   },
-
-  /* ------------------------- acervo — leitura pública --------------------- */
 
   async listPhotos(options = {}) {
     return store.photos
@@ -284,7 +211,6 @@ export const memoryStore: Store = {
     return foto && publico(foto);
   },
 
-  /** Sem filtro de estado — é o ponto. Ver o contrato em `lib/model.ts`. */
   async findSoldPhoto(photoId) {
     const foto = store.photos.find((f) => f.id === photoId);
     return foto && publico(foto);
@@ -303,8 +229,7 @@ export const memoryStore: Store = {
     for (const foto of [...store.photos].filter(noAcervo).sort((a, b) => a.id.localeCompare(b.id))) {
       const atual = porNome.get(foto.category);
       if (atual) atual.count += 1;
-      // A capa é a primeira foto da categoria: o cartão mostra o acervo que
-      // promete, não uma imagem avulsa.
+
       else porNome.set(foto.category, { count: 1, thumbnailUrl: foto.thumbnailUrl });
     }
 
@@ -318,8 +243,6 @@ export const memoryStore: Store = {
         thumbnailUrl,
       }));
   },
-
-  /* -------------------------------- autores -------------------------------- */
 
   async findPhotographer(photographerId) {
     const autor = store.photographers.find((a) => a.id === photographerId);
@@ -339,9 +262,6 @@ export const memoryStore: Store = {
     return autor ? comContagem(autor) : undefined;
   },
 
-  /* --------------------------- painel — escrita ---------------------------- */
-
-  /** Entra como `publicada` pelo mesmo motivo do Postgres: não há curadoria. */
   async createPhoto(input) {
     const autor = store.photographers.find((a) => a.id === input.photographerId);
 
@@ -365,7 +285,6 @@ export const memoryStore: Store = {
     return publico(foto);
   },
 
-
   async photosOfAuthor(photographerId, options = {}) {
     return store.photos
       .filter(
@@ -377,11 +296,6 @@ export const memoryStore: Store = {
       .map(publico);
   },
 
-  /**
-   * O filtro por autor faz parte da busca, e não é um `if` antes dela: quem
-   * procura a foto e só depois compara o dono é quem um dia esquece de
-   * comparar. Foto de outra pessoa devolve `undefined`.
-   */
   async updatePhoto(photographerId, photoId, patch: PhotoPatch) {
     const foto = store.photos.find(
       (f) => f.id === photoId && f.photographer.id === photographerId && !f.removedAt,
@@ -397,7 +311,6 @@ export const memoryStore: Store = {
     return publico(foto);
   },
 
-  /** Marca, não apaga — a licença de quem comprou é perpétua. Ver `lib/model.ts`. */
   async removePhoto(photographerId, photoId) {
     const foto = store.photos.find(
       (f) => f.id === photoId && f.photographer.id === photographerId && !f.removedAt,
@@ -410,18 +323,10 @@ export const memoryStore: Store = {
   },
 };
 
-/* ------------------------------- auxiliares ------------------------------- */
-
-/** No acervo: publicada e não removida — a mesma definição do SQL. */
 function noAcervo(foto: FotoNaMemoria): boolean {
   return !foto.removedAt && foto.status === 'publicada';
 }
 
-/**
- * Mais recente primeiro; o id desempata. As catorze fotos de demonstração
- * nascem no mesmo instante, e sem o desempate a home embaralharia a cada
- * render.
- */
 function publico({ removedAt: _removida, ...foto }: FotoNaMemoria): StoredPhoto {
   return foto;
 }

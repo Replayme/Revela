@@ -1,11 +1,3 @@
-<!--
-  Favicon: a mesma marca de `components/icons.tsx` (BrandMark), com as cores
-  resolvidas — `currentColor` não herda nada dentro de um favicon.
-
-  Os traços são mais grossos que os do componente (2.2 contra 1.6) porque a
-  16px o traço original desaparece. Engrossar aqui, e não na marca, mantém o
-  desenho da interface intacto.
--->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="32" height="32">
   <rect width="28" height="28" fill="#132B40"/>
   <g fill="none" stroke="#E9EBE6" stroke-width="2.2">

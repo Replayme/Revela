@@ -110,6 +110,22 @@ entre o `SELECT` e o `INSERT` cabe outra. Por isso:
 | `users_photographer_key` | uma conta por autor (índice parcial: quase todas são nulas) |
 | `photos_status_check` | status fora de `rascunho`/`em-analise`/`publicada` não entra |
 
+### O vínculo entre conta e autor
+
+`users.photographer_id` é o campo que aposentou o `VINCULO_DEMO` — um mapa de
+e-mail para id de autor, escrito à mão, que existia só porque `User` não sabia
+de qual fotógrafo era. Com o campo, o painel deixou de valer só para a conta de
+demonstração: qualquer conta com autor vinculado tem painel, e qualquer conta
+sem ele — que é a maioria, quem só compra — vê a tela vazia com o caminho para
+o cadastro de fotógrafo.
+
+O índice é **parcial** (`WHERE photographer_id IS NOT NULL`) porque nulo não
+conflita com nulo no Postgres, e ser explícito documenta que a coluna vazia é o
+normal, não um caso de borda.
+
+As funções do painel recebem o **id da conta**, não o e-mail: e-mail como chave
+estrangeira funciona até a primeira pessoa querer trocar de e-mail.
+
 ### A foto nunca é apagada
 
 `DELETE /api/fotos/{id}` grava `removed_at`; a linha fica. É a única forma de
@@ -129,6 +145,22 @@ O repositório aproveita isso em vez de duplicar: `ON CONFLICT DO NOTHING …
 RETURNING` aparece em `createUser` e `createOrder`, e a linha devolvida (ou a
 ausência dela) é que conta o que aconteceu — sem `try/catch` para separar "deu
 certo" de "já existia", que é o jeito de um dia engolir um erro que não era esse.
+
+### Onde o arquivo da foto entra
+
+`photos.storage_key` guarda o caminho do original no bucket, e a presença dele
+é o que distingue uma foto enviada de uma foto de demonstração — estas apontam
+para uma URL pública e não têm original nenhum, então a coluna fica nula.
+
+O arquivo **não passa pelas rotas**: função da Vercel recusa corpo acima de
+~4,5 MB e o acervo aceita 25 MB. O navegador manda direto para o bucket e
+`POST /api/fotos` recebe só o caminho — que é conferido contra o prefixo do
+autor, porque o caminho vem do cliente e o id do autor vem da sessão. Ver
+docs/API.md.
+
+O bucket ainda não existe. Quando existir, `full_url` deixa de ser endereço
+fixo e passa a ser resolvido por URL assinada de vida curta a partir de
+`storage_key`.
 
 ### Um comando por consulta
 

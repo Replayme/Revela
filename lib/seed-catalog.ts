@@ -1,19 +1,5 @@
 import type { Photographer, StoredPhoto } from './model';
 
-/**
- * O acervo de demonstração — os mesmos autores e as mesmas fotos de
- * `db/004_seed_demo_catalogo.sql`, em TypeScript.
- *
- * Existe para o armazenamento em memória (`lib/store-memory.ts`) ter o que
- * mostrar num clone recém-feito, sem banco nenhum. **Não é o acervo do site:**
- * com `DATABASE_URL` definida, quem responde é a tabela `photos`.
- *
- * As duas cópias precisam continuar iguais. Se mexer aqui, mexa lá — e
- * vice-versa; é o preço de poder rodar sem provisionar banco, e é um preço
- * pequeno enquanto o acervo de demonstração não mudar (ele não muda desde que
- * foi escrito).
- */
-
 interface FotoSemente {
   id: string;
   title: string;
@@ -30,10 +16,6 @@ interface AutorSemente {
   rating: number;
 }
 
-/**
- * A medida do arquivo entregue. No mock é o mesmo par para todo mundo; numa
- * foto de verdade sai da própria imagem, no envio.
- */
 function medidas(orientation: FotoSemente['orientation']): [number, number] {
   return orientation === 'vertical' ? [2000, 3000] : [3000, 2000];
 }
@@ -176,18 +158,13 @@ const FOTOS: FotoSemente[] = [
   },
 ];
 
-/**
- * Todas nascem publicadas: no acervo de demonstração, estar no catálogo *é*
- * estar publicado. `createdAt` é o mesmo instante para as catorze — elas
- * entraram juntas, e fingir datas diferentes seria inventar história.
- */
 const NASCIMENTO = Date.UTC(2026, 8, 3);
 
 export const seedPhotographers: Photographer[] = AUTORES.map((autor) => ({
   ...autor,
   avatarUrl: `https://picsum.photos/seed/${autor.id}-avatar/200/200`,
   coverPhotoUrl: `https://picsum.photos/seed/${autor.id}-cover/800/600`,
-  // Derivado na leitura, como no banco — ver `Photographer.photoCount`.
+
   photoCount: 0,
 }));
 
@@ -204,5 +181,4 @@ export const seedPhotos: StoredPhoto[] = FOTOS.map((foto) => {
   };
 });
 
-/** O vínculo entre a conta da Ana e o autor que ela assina. */
 export const SEED_AUTOR_DA_ANA = 'ana-vilar';

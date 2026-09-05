@@ -1,24 +1,8 @@
-/**
- * A licença do Revela é uma só.
- *
- * Acervo com três faixas (pessoal, comercial, editorial) obriga quem compra a
- * adivinhar em qual uso vai cair — e obriga quem vende a fiscalizar a
- * diferença. Uma licença que cobre todo uso lícito tira essa decisão do
- * caminho: o preço é do arquivo, não do uso.
- *
- * O texto abaixo é a versão que a tela mostra e que o pedido registra. Trocar
- * o texto exige subir a `version`: quem comprou antes continua com a licença
- * que aceitou, não com a nova.
- *
- * ⚠️ Redação de trabalho, ainda sem revisão jurídica.
- */
-
 export interface License {
   id: string;
   version: string;
   name: string;
   updatedAt: string;
-  /** Uma frase: é o que aparece ao lado do preço. */
   summary: string;
   permissions: string[];
   restrictions: string[];
@@ -48,19 +32,10 @@ export const UNIVERSAL_LICENSE: License = {
   ],
 };
 
-/** Rótulo curto para citar a versão junto ao pedido. */
 export function licenseLabel(license: License = UNIVERSAL_LICENSE): string {
   return `${license.name} v${license.version}`;
 }
 
-/**
- * O texto de uma versão específica — é o que o recibo precisa mostrar.
- *
- * Hoje só existe a 1.0, então o arquivo é o próprio "arquivo de versões". Ao
- * subir a versão, a anterior fica aqui: quem comprou com a 1.0 tem direito ao
- * texto da 1.0, e um recibo que exibisse a licença atual estaria mostrando um
- * contrato que aquela pessoa nunca aceitou.
- */
 const VERSIONS: Record<string, License> = {
   [UNIVERSAL_LICENSE.version]: UNIVERSAL_LICENSE,
 };

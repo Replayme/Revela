@@ -14,23 +14,9 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Vendas',
-  robots: { index: false, follow: false }, // tela de conta
+  robots: { index: false, follow: false },
 };
 
-/**
- * O histórico de licenças emitidas das fotos do autor.
- *
- * **É a primeira tela do painel que não depende de rota nenhuma.** Enviar,
- * editar e remover param no último passo porque precisam gravar; esta só lê, e
- * o que ela lê já existe — os pedidos que a compra registra. Por isso não tem
- * aviso de entrada: não há nada aqui que ela finja fazer.
- *
- * O que ela precisa dizer é outra coisa: **nada foi repassado**. O site não
- * cobra — `docs/API.md` §11 registra que o pedido é gravado direto, sem
- * provedor —, então a soma é o valor das licenças emitidas, não dinheiro que
- * entrou na conta de ninguém. Um painel de vendas que deixa isso implícito
- * está prometendo pagamento.
- */
 export default async function VendasPage() {
   const session = await currentSession();
   if (!session) {
@@ -139,12 +125,6 @@ export default async function VendasPage() {
   );
 }
 
-/**
- * O aviso de que a soma não é dinheiro na conta.
- *
- * Fica antes da lista, não depois: quem rola até o fim já somou os valores de
- * cabeça no caminho.
- */
 function RepasseAindaNao() {
   return (
     <div className="mt-8 flex items-start gap-3 border-l-[3px] border-amber bg-amber/8 px-4 py-3.5">
@@ -164,10 +144,6 @@ function RepasseAindaNao() {
   );
 }
 
-/**
- * A pergunta que todo autor faz ao ver a lista, respondida antes de ser feita
- * — e respondida com o motivo, senão parece dado faltando.
- */
 function QuemComprou() {
   return (
     <section className="mt-14 border-t border-paper/12 pt-7">
@@ -184,7 +160,6 @@ function QuemComprou() {
   );
 }
 
-/** Autor sem venda nenhuma — o estado normal de quem acabou de publicar. */
 function SemVendas() {
   return (
     <div className="mt-9 border border-dashed border-paper/20 px-6 py-14 text-center">

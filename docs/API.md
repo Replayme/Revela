@@ -432,10 +432,50 @@ publicou nada.
 `photos[]` traz `status`, `sales` e `revenue` por foto. **Nunca traz quem
 comprou** — ver o comentário em `vendasDoAutor`.
 
-### `POST /api/fotos` — ainda não existe
+### `POST /api/fotos` — grava a ficha da foto enviada
 
-Depende de onde guardar o arquivo. Sem bucket, uma foto dita publicada cujo
-arquivo foi descartado apareceria no acervo com a imagem de outra pessoa.
+**O arquivo não passa por aqui.** Uma função da Vercel recusa corpo acima de
+~4,5 MB e o acervo aceita 25 MB: o navegador manda direto para o bucket,
+autorizado por um token de curta duração, e esta rota recebe só o caminho de
+onde o arquivo ficou.
+
+```jsonc
+{
+  "title": "…", "category": "…", "price": 74.5,
+  "width": 4000, "height": 2667,
+  "thumbnailUrl": "https://…", "fullUrl": "https://…",
+  "storageKey": "fotos/<id-do-autor>/<arquivo>"
+}
+```
+
+| HTTP | `error` | Quando |
+| ---- | ------- | ------ |
+| 201  | —       | `{ "photo": { … } }` |
+| 400  | `VALIDATION` | Campo malformado, ou `storageKey` fora do prefixo do autor |
+| 401  | `UNAUTHENTICATED` | Sem sessão |
+| 403  | `NOT_A_PHOTOGRAPHER` | A conta não é de autor: publicar não existe para ela |
+
+Aqui todo campo é obrigatório — foto nova sem título ou sem medida não é um
+registro pela metade, é um registro que não deveria existir. As medidas vêm do
+cliente porque é lá que a imagem foi aberta; conferi-las não prova que batem
+com o arquivo, mas impede que uma medida absurda entre no banco e a ficha passe
+a mentir sobre o que se está comprando.
+
+**A ordem é upload primeiro, registro depois.** Upload sem registro deixa um
+arquivo órfão no bucket — lixo barato e limpável. A ordem contrária deixaria no
+acervo uma foto apontando para arquivo inexistente: um quadro quebrado com
+preço.
+
+**`storageKey` vem do cliente, então é conferido** contra `fotos/<id-do-autor>/`,
+que sai da sessão. Sem isso alguém registraria como sua a foto que outra pessoa
+enviou.
+
+A foto entra como `publicada`, não `em-analise`: não há curadoria, e uma fila
+sem quem analise seria uma foto invisível para sempre. O padrão da coluna
+continua `rascunho`, que é o valor seguro para quem inserir sem dizer nada.
+
+**Ainda falta o bucket.** Enquanto ele não existir, o navegador não tem para
+onde mandar o arquivo, e a tela de envio diz isso na entrada.
 
 ### `GET /api/fotos` — ainda não existe, e nasce paginado
 

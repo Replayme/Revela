@@ -1,27 +1,4 @@
 #!/usr/bin/env node
-/*
-  Aplicador de migrações — `npm run db:migrate`.
-
-  Lê `db/*.sql` em ordem de nome e aplica o que ainda não foi aplicado,
-  registrando cada arquivo em `schema_migrations`. Rodar duas vezes não faz
-  nada na segunda; é para poder chamar sem pensar.
-
-  Cada arquivo vai numa transação só, com o registro dele junto: ou o arquivo
-  inteiro entrou e ficou marcado, ou não entrou nada. No Postgres o DDL é
-  transacional, então isto vale também para `CREATE TABLE` — não existe o
-  estado "metade das tabelas criadas" que obrigaria a limpar na mão.
-
-  Os arquivos de seed (`*_seed_*.sql`) ficam de fora por padrão — contas de
-  demonstração com senha pública não entram em produção por descuido de um
-  comando. Passe `--seed` para incluí-los.
-
-    npm run db:migrate           # só o esquema
-    npm run db:migrate -- --seed # esquema + contas de demonstração
-
-  Usa o mesmo driver HTTP da aplicação, e por isso precisa mandar um comando
-  por vez: o protocolo do Postgres não aceita vários separados por `;` numa
-  consulta parametrizada. Daí o `separarComandos` abaixo.
-*/
 
 import { readdir, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
@@ -31,7 +8,6 @@ import { neon } from '@neondatabase/serverless';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-/* Carrega .env.local sem depender da versão do Node ter --env-file. */
 for (const arquivo of ['.env.local', '.env']) {
   const caminho = join(raiz, arquivo);
   if (!existsSync(caminho)) continue;
@@ -48,13 +24,6 @@ if (!url) {
   process.exit(1);
 }
 
-/**
- * Corta um arquivo `.sql` nos `;` que separam comandos de verdade.
- *
- * Um `split(';')` cru quebraria em qualquer ponto e vírgula dentro de texto ou
- * de comentário — e o seed tem hashes com `$` no meio, que é exatamente o
- * caractere do dollar-quoting. Este laço anda pelo arquivo sabendo onde está.
- */
 function separarComandos(sql) {
   const comandos = [];
   let atual = '';
@@ -78,7 +47,7 @@ function separarComandos(sql) {
       const aspa = sql[i];
       let j = i + 1;
       while (j < sql.length) {
-        if (sql[j] === aspa && sql[j + 1] === aspa) j += 2; // '' escapa a aspa
+        if (sql[j] === aspa && sql[j + 1] === aspa) j += 2; 
         else if (sql[j] === aspa) break;
         else j++;
       }

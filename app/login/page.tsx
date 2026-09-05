@@ -19,19 +19,11 @@ import { validateEmail, validatePassword } from '@/lib/validation';
 
 type ServerError = { key: MessageKey; vars?: Record<string, string | number> };
 
-/**
- * `?next=` devolve a pessoa para onde ela estava — quem clicou em "Entrar para
- * comprar" numa foto volta para aquela foto, não para o painel.
- *
- * Só caminhos internos são aceitos: um `next` com host próprio transformaria o
- * login num trampolim para phishing ("entre no Revela" e caia em outro site).
- */
 function safeNext(value: string | null): string | null {
   if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
   return value;
 }
 
-/** `useSearchParams` precisa de um limite de Suspense para a página prerenderizar. */
 export default function LoginPage() {
   return (
     <Suspense>
@@ -49,8 +41,6 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
 
-  // Um campo só mostra erro depois que a pessoa saiu dele (ou tentou enviar).
-  // Validar enquanto ainda está digitando o primeiro caractere é hostil.
   const [touched, setTouched] = useState({ email: false, password: false });
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
@@ -66,7 +56,6 @@ function LoginForm() {
   const passwordErrorKey = validatePassword(password);
   const emailValid = !emailErrorKey && email.length > 0;
 
-  // Contagem regressiva do bloqueio por tentativas.
   useEffect(() => {
     if (!blockedUntil) return;
     const id = window.setInterval(() => setNow(Date.now()), 1000);
@@ -112,8 +101,6 @@ function LoginForm() {
 
       if (response.ok) {
         setStatus('success');
-        // Redirecionamento automático: de volta para onde a pessoa estava,
-        // ou para o painel quando ela entrou direto pelo login.
         setTimeout(() => {
           router.push(next ?? data.redirectTo ?? '/dashboard');
         }, 900);
@@ -146,7 +133,6 @@ function LoginForm() {
       };
       setServerError({ key: map[data.error] ?? 'error.UNKNOWN' });
 
-      // Foco no campo que provavelmente precisa de correção.
       if (data.error === 'EMAIL_NOT_FOUND') emailRef.current?.focus();
       if (data.error === 'INVALID_PASSWORD') passwordRef.current?.select();
     } catch {
@@ -197,13 +183,7 @@ function LoginForm() {
             </div>
           )}
 
-          {/* method="post" é a rede de segurança: se o JavaScript ainda não
-              hidratou quando a pessoa aperta Entrar, o navegador faz um envio
-              nativo — e num GET a senha iria parar na URL, no histórico e nos
-              logs do servidor. Com POST isso não acontece. */}
           <form onSubmit={handleSubmit} method="post" noValidate>
-            {/* Sair de um campo em branco não é um erro: quem acabou de chegar
-                não fez nada de errado. O "campo obrigatório" só aparece no envio. */}
             <TextField
               ref={emailRef}
               name="email"

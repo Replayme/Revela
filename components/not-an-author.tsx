@@ -1,17 +1,6 @@
 import Link from 'next/link';
 import { IconUpload } from './icons';
 
-/**
- * A conta existe e não publica no acervo.
- *
- * Não é erro nem falta de permissão: é quem entrou para comprar e chegou a uma
- * tela de quem vende. A saída é o cadastro de fotógrafo, que já existe — por
- * isso a tela oferece o caminho em vez de só barrar.
- *
- * Mora aqui, e não dentro de uma das telas, porque as duas do painel precisam
- * dela e é a mesma resposta: a segunda cópia divergiria da primeira no dia em
- * que uma fosse corrigida.
- */
 export function NotAnAuthor() {
   return (
     <div className="mt-9 border border-dashed border-paper/20 px-6 py-14 text-center">

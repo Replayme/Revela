@@ -22,14 +22,6 @@ const PERFIS = [
   { slug: 'leticia-sa', nome: 'Letícia Sá', cidade: 'Fortaleza' },
 ];
 
-/**
- * Home do Revela — marketplace de fotógrafos.
- *
- * Recebe o acervo por prop em vez de importar um array. Antes o catálogo
- * inteiro era empacotado para o navegador e a "ida ao back-end" era um
- * `setTimeout` de 800ms; agora quem busca é `app/page.tsx`, no servidor, e o
- * que chega aqui já veio do banco.
- */
 export function HomeScreen({
   photos,
   categories,
@@ -41,16 +33,11 @@ export function HomeScreen({
 }) {
   const router = useRouter();
   const sessao = useSession();
-  // O favorito é do usuário, não da cópia local do catálogo: alternar aqui
-  // pintava o coração e perdia tudo no reload.
+
   const { favorites, toggle: alternarFavorita } = useFavorites();
   const [menuAberto, setMenuAberto] = useState(false);
   const [busca, setBusca] = useState('');
 
-  // `null` = ainda carregando, e o skeleton ainda existe: a primeira pintura
-  // acontece antes da hidratação, e um quadro sem foto é melhor que um pulo.
-  // O atraso de 800ms que simulava a ida ao back-end saiu — a ida é de verdade
-  // agora, e acontece no servidor, antes desta tela existir.
   const [fotos, setFotos] = useState<Photo[] | null>(null);
 
   useEffect(() => {
@@ -111,9 +98,6 @@ export function HomeScreen({
               <button type="submit">Buscar</button>
             </form>
 
-            {/* A home tem header próprio (CSS module), separado do
-                `SiteHeader` do resto do site — mas quem já entrou precisa
-                achar a conta a partir daqui também. */}
             <div className={styles.acessos}>
               {sessao ? (
                 <Link className={styles.cta} href="/dashboard">
@@ -153,16 +137,14 @@ export function HomeScreen({
                   Explorar
                 </Link>
               </li>
-              {/* Âncoras, não rotas: as duas seções são desta página. Antes
-                  eram links para /categorias e /sobre, que nunca existiram. */}
+
               <li>
                 <Link href="/#categorias">Categorias</Link>
               </li>
               <li>
                 <Link href="/#sobre">Sobre</Link>
               </li>
-              {/* No celular o header esconde o "Entrar"; sem esta entrada quem
-                  já tem conta não teria como fazer login pela home. */}
+
               {sessao ? (
                 <li>
                   <Link className={`${styles.cta} ${styles.ctaMovel}`} href="/dashboard">
@@ -209,8 +191,7 @@ export function HomeScreen({
             </div>
             <div className={styles.filme}>
               {PERFIS.map((perfil) => {
-                // A moldura já tinha o degradê de multiply por cima; faltava a
-                // foto embaixo dele. "Compare portfólios" pede portfólio à vista.
+
                 const capa = photographers.find((a) => a.id === perfil.slug)?.coverPhotoUrl;
                 return (
                   <Link key={perfil.slug} className={styles.quadro} href={`/perfil/${perfil.slug}`}>
@@ -263,8 +244,6 @@ export function HomeScreen({
           </div>
         </section>
 
-        {/* Sem `.bloco`/`.wrap`: a faixa escura sangra de ponta a ponta e traz
-            o próprio contêiner interno. */}
         <ValueSection />
 
         <section className={styles.bloco} id="categorias">
@@ -274,10 +253,7 @@ export function HomeScreen({
               Cada foto entra numa especialidade. Clicar aqui abre o acervo já
               filtrado por ela.
             </p>
-            {/* A lista vem das categorias derivadas das próprias
-                fotos: toda categoria oferecida tem resultado. A lista escrita
-                à mão que estava aqui levava para /categorias/{slug}, uma rota
-                que nunca existiu. */}
+
             <div className={styles.categorias}>
               {categories.map((categoria) => (
                 <Link
@@ -295,7 +271,6 @@ export function HomeScreen({
           </div>
         </section>
 
-
         <section className={styles.bloco} id="sobre">
           <div className={`${styles.wrap} ${styles.sobre}`}>
             <div>
@@ -307,12 +282,7 @@ export function HomeScreen({
               </p>
               <p>Não cobramos comissão sobre o trabalho entregue.</p>
             </div>
-            {/* Aqui havia "1.940 fotógrafos" e "214 cidades" — números que
-                ninguém mediu, num site que ainda roda com catorze fotos de
-                demonstração. Trocados por afirmações que o próprio código
-                sustenta: a licença única de `lib/license.ts` e a política de
-                comissão do parágrafo ao lado. Quando houver número real
-                medido, ele volta. */}
+
             <div className={styles.numeros}>
               <div>
                 <b>Uma</b>

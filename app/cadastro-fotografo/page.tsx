@@ -24,13 +24,11 @@ import {
 
 type ServerError = { key: MessageKey; vars?: Record<string, string | number> };
 
-/** Só caminhos internos: `next` com host próprio viraria trampolim de phishing. */
 function safeNext(value: string | null): string | null {
   if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
   return value;
 }
 
-/** `useSearchParams` precisa de um limite de Suspense para a página prerenderizar. */
 export default function SignUpPage() {
   return (
     <Suspense>
@@ -50,7 +48,6 @@ function SignUpForm() {
   const [confirmation, setConfirmation] = useState('');
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  // Um campo só mostra erro depois que a pessoa saiu dele (ou tentou enviar).
   const [touched, setTouched] = useState({
     name: false,
     email: false,
@@ -90,7 +87,6 @@ function SignUpForm() {
     });
     setServerError(null);
 
-    // Foco no primeiro campo que precisa de correção, na ordem da tela.
     if (nameErrorKey) return nameRef.current?.focus();
     if (emailErrorKey) return emailRef.current?.focus();
     if (passwordErrorKey) return passwordRef.current?.focus();
@@ -114,7 +110,6 @@ function SignUpForm() {
 
       const data = await response.json().catch(() => ({}));
 
-      // 202: modo sem enumeração — a resposta é a mesma com ou sem conta.
       if (response.status === 202) {
         setStatus('pending');
         return;
@@ -218,9 +213,6 @@ function SignUpForm() {
                 </div>
               )}
 
-              {/* method="post" é a rede de segurança: se o JavaScript ainda não
-                  hidratou quando a pessoa aperta Criar conta, o navegador faz
-                  um envio nativo — e num GET a senha iria parar na URL. */}
               <form onSubmit={handleSubmit} method="post" noValidate>
                 <TextField
                   ref={nameRef}
@@ -369,11 +361,6 @@ function SignUpForm() {
   );
 }
 
-/**
- * A frase do aceite muda de ordem entre os idiomas, então os links entram nos
- * marcadores `{terms}` e `{privacy}` do texto traduzido em vez de serem
- * concatenados em volta dele.
- */
 function TermsLabel() {
   const { t } = useLocale();
   const partes = t('signup.terms').split(/(\{terms\}|\{privacy\})/);
