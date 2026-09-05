@@ -1,14 +1,33 @@
 import type { MetadataRoute } from 'next';
 import { listCategories, listPhotographers, listPhotos } from '@/lib/repository';
 import { siteUrl } from '@/lib/site';
+import type { Category, Photographer, StoredPhoto } from '@/lib/model';
+
+export const dynamic = 'force-dynamic';
+
+interface Acervo {
+  photos: StoredPhoto[];
+  categories: Category[];
+  photographers: Photographer[];
+}
+
+const VAZIO: Acervo = { photos: [], categories: [], photographers: [] };
+
+async function acervo(): Promise<Acervo> {
+  try {
+    const [photos, categories, photographers] = await Promise.all([
+      listPhotos(),
+      listCategories(),
+      listPhotographers(),
+    ]);
+    return { photos, categories, photographers };
+  } catch {
+    return VAZIO;
+  }
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-
-  const [photos, categories, photographers] = await Promise.all([
-    listPhotos(),
-    listCategories(),
-    listPhotographers(),
-  ]);
+  const { photos, categories, photographers } = await acervo();
 
   const url = (caminho: string) => `${siteUrl()}${caminho}`;
 
