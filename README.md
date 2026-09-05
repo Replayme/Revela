@@ -129,17 +129,21 @@ traduzido.
 
 | Item                          | Onde                                  |
 | ----------------------------- | ------------------------------------- |
-| Senha com hash + salt         | `lib/mock-db.ts` (scrypt)             |
-| Comparação em tempo constante | `lib/mock-db.ts`                      |
+| Senha com hash + salt         | `lib/password.ts` (scrypt)            |
+| Comparação em tempo constante | `lib/password.ts`                     |
 | Rate limit 5 / 15 min         | `lib/rate-limit.ts`                   |
 | Bloqueio de IP por força bruta| `lib/rate-limit.ts` (15 falhas → 30 min) |
 | Sessão em cookie `HttpOnly`   | `app/api/auth/login/route.ts`         |
-| Token de reset com hash, 24 h, uso único | `lib/mock-db.ts`           |
+| Token de reset com hash, 24 h, uso único | `lib/tokens.ts` + `password_reset_tokens` |
 | HSTS e cabeçalhos de segurança| `next.config.mjs`                     |
 | `method="post"` nos formulários | evita a senha ir parar na URL se o JS ainda não hidratou |
 
-**O mock é mock.** Rate limit em memória não sobrevive a duas instâncias, e o
-"banco" some a cada restart. `docs/API.md` §8 e §11 dizem o que trocar.
+**Rate limit em memória continua sendo mock**: não sobrevive a duas
+instâncias, e na Vercel são muitas. `docs/API.md` §8 diz o que trocar.
+
+O armazenamento já não é: com `DATABASE_URL` definida, os dados vão para o
+Postgres (`docs/BANCO.md`). Sem ela, o site cai na memória do processo — bom
+para desenvolver, inútil em produção.
 
 ---
 
@@ -168,11 +172,44 @@ acima.
 ```bash
 AUTH_SECRET=                    # obrigatório em produção: chave de assinatura da sessão
 REVEAL_ACCOUNT_EXISTENCE=true   # false = "E-mail ou senha incorretos" nos dois casos
+
+# Postgres (Neon). Sem ela, o site usa a memória do processo.
+# Na Vercel a integração do Neon cria esta variável sozinha.
+# Ver docs/BANCO.md e .env.example.
+DATABASE_URL=
+
+# Vercel Blob, para os arquivos das fotos. Sem ela, publicar foto responde 503;
+# o resto do site funciona. Ver docs/API.md.
+BLOB_READ_WRITE_TOKEN=
 ```
 
 Sobre `REVEAL_ACCOUNT_EXISTENCE`: mensagens distintas são melhores de usar e
 foi assim que a tela foi pedida, mas permitem descobrir quais e-mails têm
 conta no site. `docs/API.md` §7 explica quando vale a pena mudar.
+
+---
+
+## Banco de dados
+
+O armazenamento é Postgres, servido pelo Neon. Preencha `DATABASE_URL` e
+aplique o esquema:
+
+```bash
+npm run db:migrate            # tabelas, índices e restrições
+npm run db:migrate -- --seed  # + contas de demonstração (nunca em produção)
+```
+
+Sem essa variável o site usa um armazenamento em memória, que some a cada
+restart — serve para desenvolver, não para publicar.
+
+O driver fala com o banco por HTTPS, não por soquete TCP: **não há pool de
+conexões para dimensionar**, que é o problema clássico de banco em serverless.
+Cada Preview Deployment ganha um branch próprio do banco, criado e destruído
+pela integração — nenhum pull request escreve na base de produção.
+
+**`docs/BANCO.md`** explica a escolha: por que Neon e não SQL Server, o que
+muda em serverless, o passo a passo da integração e o que fazer para
+desenvolver com um Postgres local.
 
 ---
 
@@ -189,6 +226,8 @@ app/
   foto/[id]/          página da foto, com a compra
   api/auth/{login,register,forgot-password,reset-password,logout}/
   api/pedidos/        compra e entrega do arquivo
+  api/fotos/[id]/     PATCH edita e despublica · DELETE tira do acervo
+  api/minhas-fotos/   o painel de quem vende
   globals.css         tokens, texturas e animações
 components/
   auth-shell.tsx      moldura das telas de acesso
@@ -204,12 +243,29 @@ middleware.ts         barreira das rotas privadas, antes do render
 lib/
   site.ts             o endereço público, num lugar só (OG, sitemap, robots)
   session-cookie.ts   o nome do cookie — sem dependência, para o edge
-  mock-categories.ts  categorias derivadas do acervo (nunca filtro vazio)
   validation.ts       regras compartilhadas cliente/servidor
   rate-limit.ts       limites e bloqueio
   session.ts          leitura do cookie de sessão, num lugar só
   license.ts          o texto da licença e o histórico de versões
-  mock-db.ts          usuários, hashes, tokens, sessão, pedidos
+  password.ts         hash de senha (scrypt) e comparação em tempo constante
+  tokens.ts           token de sessão e token de reset, assinados
+  model.ts            o modelo de dados e o contrato de armazenamento
+  repository.ts       a porta única dos dados — escolhe banco ou memória
+  db.ts               os dois clientes do Postgres, consultas parametrizadas
+  store-postgres.ts   o armazenamento em Postgres
+  store-memory.ts     o armazenamento em memória, para desenvolver
+  seed-catalog.ts     o acervo de demonstração, para o store em memória
+  photographer-panel.ts       o contrato do painel de quem vende
+  photographer-panel-data.ts  o painel, montado a partir do banco
+  photo-validation.ts as regras da ficha da foto, no servidor
+  slug.ts             "Arquitetura e imóveis" → "arquitetura-e-imoveis"
   i18n.ts             pt / en
+db/
+  001_schema.sql      contas, tokens, pedidos e favoritos
+  002_seed_demo.sql   contas de demonstração (nunca em produção)
+  003_catalogo.sql    autores, fotos e o vínculo conta↔autor
+  004_seed_demo_catalogo.sql  acervo de demonstração (nunca em produção)
+scripts/migrate.mjs   aplicador de migrações — `npm run db:migrate`
 docs/API.md           contrato do back-end
+docs/BANCO.md         o banco: escolha, esquema e operação
 ```

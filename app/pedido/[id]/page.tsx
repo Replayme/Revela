@@ -4,8 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { IconAlert, IconCheck, IconDownload } from '@/components/icons';
-import { findOrderById } from '@/lib/mock-db';
-import { findPhoto } from '@/lib/mock-photos';
+import { findOrderById, findSoldPhoto } from '@/lib/repository';
 import { UNIVERSAL_LICENSE, licenseByVersion } from '@/lib/license';
 import { currentSession } from '@/lib/session';
 import { formatDateLong, formatPrice } from '@/lib/format';
@@ -14,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Recibo e licença',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: false }, 
 };
 
 export default async function OrderPage({
@@ -26,10 +25,11 @@ export default async function OrderPage({
   const session = await currentSession();
   if (!session) redirect(`/login?next=${encodeURIComponent(`/pedido/${id}`)}`);
 
-  const order = findOrderById(session.sub, id);
+  const order = await findOrderById(session.sub, id);
   if (!order) notFound();
 
-  const photo = findPhoto(order.photoId);
+  const photo = await findSoldPhoto(order.photoId);
+
   const license = licenseByVersion(order.licenseVersion);
   const shown = license ?? UNIVERSAL_LICENSE;
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { FilmFrame } from './film-frame';
 import { IconHeart, IconHeartFilled, IconStar } from './icons';
 import { formatPrice, formatRating } from '@/lib/format';
-import type { Photo } from '@/lib/mock-photos';
+import type { Photo } from '@/lib/model';
 
 const SIZES =
   '(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw';

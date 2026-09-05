@@ -223,8 +223,11 @@ Regras que valem para qualquer um deles:
 - reidrate o hash (recalcule com parâmetros atuais) no próximo login bem
   sucedido quando o custo armazenado estiver defasado.
 
-O `lib/mock-db.ts` deste projeto usa scrypt com salt por usuário e comparação
+O `lib/password.ts` deste projeto usa scrypt com salt por usuário e comparação
 em tempo constante — serve de referência, mas troque por argon2id em produção.
+O formato guardado (`scrypt$<salt>$<hash>`) começa pelo nome do esquema
+justamente para essa troca poder ser gradual, sem forçar ninguém a redefinir a
+senha.
 
 ---
 
@@ -385,6 +388,141 @@ Três decisões que valem para a versão real:
   privado, com `Content-Disposition: attachment` e `Cache-Control: no-store`.
   A rota confere a posse a cada pedido e só então assina.
 
+### `PATCH /api/fotos/<id>` — edita a ficha
+
+Só o autor da foto. Corpo parcial: manda-se **apenas** o que mudou.
+
+```jsonc
+{ "title": "…", "category": "…", "price": 109.5, "status": "rascunho" }
+```
+
+| HTTP | `error` | Quando |
+| ---- | ------- | ------ |
+| 200  | —       | `{ "photo": { … } }` com a ficha já atualizada |
+| 400  | `VALIDATION` | Campo malformado (`fields` diz qual), ou corpo sem nenhum campo |
+| 401  | `UNAUTHENTICATED` | Sem sessão |
+| 404  | `PHOTO_NOT_FOUND` | Foto inexistente **ou de outro autor** — ver §7 |
+
+`status` é como **despublicar** acontece: `'rascunho'` tira da venda sem tirar
+do acervo do autor. Mudar o preço **não altera pedido antigo** — `pricePaid`
+mora no pedido justamente para isso.
+
+A conferência de dono não é um `if` antes da gravação: o id do autor entra no
+`WHERE` do UPDATE. Buscar, comparar e só então gravar deixa uma janela entre a
+comparação e a escrita.
+
+### `DELETE /api/fotos/<id>` — tira do acervo
+
+| HTTP | `error` | Quando |
+| ---- | ------- | ------ |
+| 200  | —       | `{ "ok": true }` |
+| 401  | `UNAUTHENTICATED` | Sem sessão |
+| 404  | `PHOTO_NOT_FOUND` | Inexistente ou de outro autor |
+
+**Não apaga a linha, e não toca nos pedidos.** Grava `removed_at`: a foto sai
+da busca, do acervo e do painel, e quem já comprou continua com o recibo e com
+o download. A venda também continua no histórico do autor. Ver docs/BANCO.md.
+
+### `GET /api/minhas-fotos` — o painel de quem vende
+
+Responde `{ photographer, photos }`. Conta que não é de autor recebe **200 com
+o painel vazio** (`photographer: null`), não 404: ela existe e simplesmente não
+publicou nada.
+
+`photos[]` traz `status`, `sales` e `revenue` por foto. **Nunca traz quem
+comprou** — ver o comentário em `vendasDoAutor`.
+
+### `POST /api/fotos` — grava a ficha da foto enviada
+
+**O arquivo não passa por aqui.** Uma função da Vercel recusa corpo acima de
+~4,5 MB e o acervo aceita 25 MB: o navegador manda direto para o bucket,
+autorizado por um token de curta duração, e esta rota recebe só o caminho de
+onde o arquivo ficou.
+
+```jsonc
+{
+  "title": "…", "category": "…", "price": 74.5,
+  "width": 4000, "height": 2667,
+  "thumbnailUrl": "https://…", "fullUrl": "https://…",
+  "storageKey": "fotos/<id-do-autor>/<arquivo>"
+}
+```
+
+| HTTP | `error` | Quando |
+| ---- | ------- | ------ |
+| 201  | —       | `{ "photo": { … } }` |
+| 400  | `VALIDATION` | Campo malformado, ou `storageKey` fora do prefixo do autor |
+| 401  | `UNAUTHENTICATED` | Sem sessão |
+| 403  | `NOT_A_PHOTOGRAPHER` | A conta não é de autor: publicar não existe para ela |
+
+Aqui todo campo é obrigatório — foto nova sem título ou sem medida não é um
+registro pela metade, é um registro que não deveria existir. As medidas vêm do
+cliente porque é lá que a imagem foi aberta; conferi-las não prova que batem
+com o arquivo, mas impede que uma medida absurda entre no banco e a ficha passe
+a mentir sobre o que se está comprando.
+
+**A ordem é upload primeiro, registro depois.** Upload sem registro deixa um
+arquivo órfão no bucket — lixo barato e limpável. A ordem contrária deixaria no
+acervo uma foto apontando para arquivo inexistente: um quadro quebrado com
+preço.
+
+**`storageKey` vem do cliente, então é conferido** contra `fotos/<id-do-autor>/`,
+que sai da sessão. Sem isso alguém registraria como sua a foto que outra pessoa
+enviou.
+
+A foto entra como `publicada`, não `em-analise`: não há curadoria, e uma fila
+sem quem analise seria uma foto invisível para sempre. O padrão da coluna
+continua `rascunho`, que é o valor seguro para quem inserir sem dizer nada.
+
+### `POST /api/fotos/upload` — autoriza o navegador a enviar
+
+Não recebe nem devolve arquivo: emite um token de curta duração que permite ao
+navegador escrever **um caminho específico** no bucket.
+
+| HTTP | `error` | Quando |
+| ---- | ------- | ------ |
+| 200  | —       | `{ clientToken }` para o `upload()` do `@vercel/blob/client` |
+| 400  | `UPLOAD_REJECTED` | Caminho fora do prefixo do autor |
+| 401  | `UNAUTHENTICATED` | Sem sessão |
+| 403  | `NOT_A_PHOTOGRAPHER` | A conta não é de autor |
+| 503  | `STORAGE_UNAVAILABLE` | Sem `BLOB_READ_WRITE_TOKEN` |
+
+O token sai com o caminho fixado e mais dois limites, diferentes conforme o
+prefixo:
+
+| Prefixo | Tipos | Máximo |
+| --- | --- | --- |
+| `fotos/<autor>/` (original) | `image/jpeg`, `image/png` | 25 MB |
+| `previews/<autor>/` (prévia) | `image/jpeg`, `image/webp` | 4 MB |
+
+**O prefixo por autor é a fronteira entre autores dentro do bucket**, e sai da
+sessão — nunca do corpo da requisição. É ele que impede alguém de escrever, ou
+de registrar como sua, a foto de outra pessoa.
+
+### Dois arquivos por foto, e por quê
+
+O **original** vai como `private`: não tem URL pública, e só sai por
+`GET /api/pedidos/<id>/arquivo`, que assina uma URL de 5 minutos. A **prévia**
+vai como `public`, porque é ela que o acervo mostra para quem ainda não comprou.
+
+A prévia é gerada **no navegador** (canvas, 1600px no lado maior, JPEG q82).
+A alternativa era o `putImage` do SDK, que otimiza no servidor — foi descartada
+porque exige autenticação OIDC além do token de leitura/escrita e é cobrada
+como transformação de imagem, duas dependências a mais para um arquivo que é
+só a vitrine.
+
+**Limitação conhecida:** o token não consegue fixar `access`; quem escolhe
+público ou privado é a chamada do cliente. Um autor que alterasse o próprio
+código para enviar o original como público exporia **o próprio** arquivo — o
+prefixo continua impedindo que ele alcance o de outra pessoa. Se isso passar a
+importar, o caminho é conferir o `access` no registro e recusar.
+
+### A ordem, e o que acontece se quebrar no meio
+
+Prévia → original → `POST /api/fotos`. Se a última etapa falhar, ficam dois
+arquivos órfãos no bucket, que são lixo barato e limpável; a ordem contrária
+deixaria no acervo uma foto apontando para arquivo inexistente.
+
 ### `GET /api/fotos` — ainda não existe, e nasce paginado
 
 A busca do acervo (`/explorar`) filtra e ordena **em memória**, sobre o array
@@ -433,7 +571,9 @@ ele precisa expor: os pedidos da sessão, mais recentes primeiro, paginados.
 
 ## 12. Checklist antes de ir ao ar
 
-- [ ] Trocar `lib/mock-db.ts` por banco real com argon2id
+- [x] Trocar o armazenamento em memória por banco real — Postgres (Neon), em
+      `lib/store-postgres.ts` (ver docs/BANCO.md)
+- [ ] Trocar o scrypt de `lib/password.ts` por argon2id
 - [ ] Rate limiting em Redis ou no gateway, não em memória
 - [ ] `AUTH_SECRET` forte e fora do repositório
 - [ ] `Secure` nos cookies e HSTS ativo

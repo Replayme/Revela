@@ -5,7 +5,7 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft, IconAlert, IconLicense } from '@/components/icons';
-import { painelDoAutor, vendasDoAutor } from '@/lib/mock-photographer-panel';
+import { painelDoAutor, vendasDoAutor } from '@/lib/photographer-panel-data';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 import { formatCount, formatDate, formatPrice } from '@/lib/format';
 import { currentSession } from '@/lib/session';
@@ -23,8 +23,9 @@ export default async function VendasPage() {
     redirect(`/login?next=${encodeURIComponent('/dashboard/vendas')}`);
   }
 
-  const ehAutor = painelDoAutor(session.email) !== null;
-  const vendas = ehAutor ? vendasDoAutor(session.email) : [];
+  const painel = await painelDoAutor(session.sub);
+  const ehAutor = painel !== null;
+  const vendas = await vendasDoAutor(painel);
   const total = vendas.reduce((soma, venda) => soma + venda.order.pricePaid, 0);
 
   return (

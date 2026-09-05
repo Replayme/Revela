@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FilmFrame } from './film-frame';
 import { formatCount } from '@/lib/format';
-import type { Category } from '@/lib/mock-categories';
+import type { Category } from '@/lib/model';
 
 const SIZES =
   '(min-width: 1024px) 22vw, (min-width: 768px) 30vw, 45vw';

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { favoritesByUser, toggleFavorite } from '@/lib/mock-db';
-import { findPhoto } from '@/lib/mock-photos';
+import { favoritesByUser, toggleFavorite } from '@/lib/repository';
+import { findPhoto } from '@/lib/repository';
 import { currentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -13,7 +13,7 @@ export async function GET() {
     return NextResponse.json({ error: 'UNAUTHENTICATED' }, { status: 401 });
   }
 
-  return NextResponse.json({ photoIds: favoritesByUser(session.sub) });
+  return NextResponse.json({ photoIds: await favoritesByUser(session.sub) });
 }
 
 export async function POST(request: Request) {
@@ -31,12 +31,12 @@ export async function POST(request: Request) {
   }
 
   const photoId = typeof body.photoId === 'string' ? body.photoId : '';
-  if (!findPhoto(photoId)) {
+  if (!(await findPhoto(photoId))) {
     return NextResponse.json({ error: 'PHOTO_NOT_FOUND' }, { status: 404 });
   }
 
   return NextResponse.json({
     photoId,
-    favorited: toggleFavorite(session.sub, photoId),
+    favorited: await toggleFavorite(session.sub, photoId),
   });
 }

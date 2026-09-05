@@ -5,7 +5,8 @@ import { SiteFooter } from '@/components/site-footer';
 import { NewPhotoScreen } from '@/components/new-photo-screen';
 import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft } from '@/components/icons';
-import { painelDoAutor } from '@/lib/mock-photographer-panel';
+import { painelDoAutor } from '@/lib/photographer-panel-data';
+import { listCategories } from '@/lib/repository';
 import { currentSession } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,10 @@ export default async function NovaFotoPage() {
     redirect(`/login?next=${encodeURIComponent('/dashboard/nova-foto')}`);
   }
 
-  const painel = painelDoAutor(session.email);
+  const [painel, categories] = await Promise.all([
+    painelDoAutor(session.sub),
+    listCategories(),
+  ]);
 
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
@@ -48,7 +52,10 @@ export default async function NovaFotoPage() {
                 para sempre. O que muda de uma para a outra é o preço do
                 arquivo, e ele é seu.
               </p>
-              <NewPhotoScreen />
+              <NewPhotoScreen
+                categories={categories}
+                photographerId={painel.photographer.id}
+              />
             </>
           ) : (
             <>

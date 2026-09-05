@@ -2,7 +2,7 @@ import {
   PhotographerCard,
   PhotographerCardSkeleton,
 } from './photographer-card';
-import type { Photographer } from '@/lib/mock-photographers';
+import type { Photographer } from '@/lib/model';
 
 const GRID = 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3';
 

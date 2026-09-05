@@ -1,12 +1,12 @@
-import type { Photo } from './mock-photos';
+import type { PhotoStatus, StoredPhoto } from './model';
 
-export type PhotoStatus = 'rascunho' | 'em-analise' | 'publicada';
+export type { PhotoStatus };
 
-export interface PhotographerPhoto extends Photo {
-  status: PhotoStatus;
+export interface PhotographerPhoto extends StoredPhoto {
+
   sales: number;
+
   revenue: number;
-  updatedAt?: number;
 }
 
 export const STATUS_LABEL: Record<PhotoStatus, string> = {

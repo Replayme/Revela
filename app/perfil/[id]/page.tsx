@@ -4,23 +4,15 @@ import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { IconStar } from '@/components/icons';
-import {
-  findPhotographer,
-  mockPhotographers,
-} from '@/lib/mock-photographers';
-import { photosByPhotographer } from '@/lib/mock-photos';
+import { findPhotographer, photosByPhotographer } from '@/lib/repository';
 import { formatCount, formatPrice, formatRating } from '@/lib/format';
-
-export function generateStaticParams() {
-  return mockPhotographers.map((photographer) => ({ id: photographer.id }));
-}
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const photographer = findPhotographer((await params).id);
+  const photographer = await findPhotographer((await params).id);
   if (!photographer) return { title: 'Fotógrafo não encontrado' };
   const description = `${formatCount(photographer.photoCount)} fotos publicadas no acervo do Revela.`;
 
@@ -41,10 +33,10 @@ export default async function PhotographerPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const photographer = findPhotographer((await params).id);
+  const photographer = await findPhotographer((await params).id);
   if (!photographer) notFound();
 
-  const fotos = photosByPhotographer(photographer.id);
+  const fotos = await photosByPhotographer(photographer.id);
 
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">

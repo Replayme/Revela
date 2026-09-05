@@ -5,25 +5,24 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { BuyButton } from '@/components/buy-button';
 import { IconCheck, IconStar } from '@/components/icons';
-import { findOrder } from '@/lib/mock-db';
-import { findPhoto, mockPhotos, photosByPhotographer } from '@/lib/mock-photos';
-import { findPhotographer } from '@/lib/mock-photographers';
+import {
+  findOrder,
+  findPhoto,
+  findPhotographer,
+  photosByPhotographer,
+} from '@/lib/repository';
 import { UNIVERSAL_LICENSE, licenseLabel } from '@/lib/license';
 import { currentSession } from '@/lib/session';
 import { formatCount, formatPrice, formatRating } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
-export function generateStaticParams() {
-  return mockPhotos.map((photo) => ({ id: photo.id }));
-}
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const photo = findPhoto((await params).id);
+  const photo = await findPhoto((await params).id);
   if (!photo) return { title: 'Foto não encontrada' };
   const description = `${photo.category} por ${photo.photographer.name}. ${UNIVERSAL_LICENSE.summary}`;
 
@@ -51,16 +50,17 @@ export default async function PhotoPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const photo = findPhoto((await params).id);
+  const photo = await findPhoto((await params).id);
   if (!photo) notFound();
 
   const session = await currentSession();
-  const pedido = session ? findOrder(session.sub, photo.id) : undefined;
+  const pedido = session ? await findOrder(session.sub, photo.id) : undefined;
 
-  const photographer = findPhotographer(photo.photographer.id);
-  const outras = photosByPhotographer(photo.photographer.id).filter(
-    (outra) => outra.id !== photo.id,
-  );
+  const [photographer, doAutor] = await Promise.all([
+    findPhotographer(photo.photographer.id),
+    photosByPhotographer(photo.photographer.id),
+  ]);
+  const outras = doAutor.filter((outra) => outra.id !== photo.id);
 
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">

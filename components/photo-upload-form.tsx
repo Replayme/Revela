@@ -11,23 +11,29 @@ import {
 import Image from 'next/image';
 import { Alert, SubmitButton, TextField } from './form';
 import { IconImage, IconUpload } from './icons';
-import { mockCategories } from '@/lib/mock-categories';
+import {
+  LADO_MINIMO,
+  TAMANHO_MAX,
+  TIPOS_ACEITOS,
+} from '@/lib/blob-paths';
+import type { Category } from '@/lib/model';
 import { formatFileSize, formatPrice } from '@/lib/format';
 
 export interface PhotoDraft {
   title: string;
   category: string;
+
   price: number;
+
   file: File | null;
   width: number;
   height: number;
   orientation: 'horizontal' | 'vertical';
 }
 
-const TIPOS_ACEITOS = ['image/jpeg', 'image/png'];
-const TAMANHO_MAX = 25 * 1024 * 1024;
 
-const LADO_MINIMO = 1600;
+
+
 
 function parsePrice(valor: string): number {
   const limpo = valor.replace(/\s/g, '').replace(',', '.');
@@ -43,11 +49,15 @@ interface Selecao {
 }
 
 export function PhotoUploadForm({
+  categories,
   initial,
   submitLabel = 'Publicar foto',
   onSubmit,
   onCancel,
 }: {
+
+  categories: Category[];
+
   initial?: Partial<Pick<PhotoDraft, 'title' | 'category' | 'price'>> & {
     thumbnailUrl?: string;
     width?: number;
@@ -61,8 +71,9 @@ export function PhotoUploadForm({
 
   const [titulo, setTitulo] = useState(initial?.title ?? '');
   const [categoria, setCategoria] = useState(
-    initial?.category ?? mockCategories[0]?.name ?? '',
+    initial?.category ?? categories[0]?.name ?? '',
   );
+
   const [preco, setPreco] = useState(
     initial?.price != null ? initial.price.toFixed(2).replace('.', ',') : '',
   );
@@ -70,6 +81,7 @@ export function PhotoUploadForm({
   const [erroArquivo, setErroArquivo] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [falha, setFalha] = useState<string | null>(null);
+
   const [tentouEnviar, setTentouEnviar] = useState(false);
 
   const inputArquivoRef = useRef<HTMLInputElement>(null);
@@ -78,6 +90,7 @@ export function PhotoUploadForm({
   const urlPreview = useRef<string | null>(null);
 
   useEffect(() => {
+
     return () => {
       if (urlPreview.current) URL.revokeObjectURL(urlPreview.current);
     };
@@ -175,6 +188,7 @@ export function PhotoUploadForm({
         orientation: width >= height ? 'horizontal' : 'vertical',
       });
     } catch (erro) {
+
       console.error('Falha ao salvar a foto:', erro);
       setFalha('Não deu para salvar agora. Tente de novo em instantes.');
     } finally {
@@ -222,7 +236,7 @@ export function PhotoUploadForm({
             onChange={(event) => setCategoria(event.target.value)}
             className="w-full rounded-none border border-paper/20 bg-prussia-900/70 px-3.5 py-3 text-base text-paper focus:border-amber focus:outline-none"
           >
-            {mockCategories.map((item) => (
+            {categories.map((item) => (
               <option key={item.slug} value={item.name}>
                 {item.name}
               </option>

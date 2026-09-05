@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { verifySessionToken, type SessionPayload } from './mock-db';
+import { verifySessionToken, type SessionPayload } from './tokens';
 import { SESSION_COOKIE } from './session-cookie';
 
 export { SESSION_COOKIE };

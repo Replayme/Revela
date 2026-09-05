@@ -5,7 +5,9 @@ import { SiteFooter } from '@/components/site-footer';
 import { EditPhotoScreen } from '@/components/edit-photo-screen';
 import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft } from '@/components/icons';
-import { fotoDoAutor, painelDoAutor } from '@/lib/mock-photographer-panel';
+import { fotoDoAutor, painelDoAutor } from '@/lib/photographer-panel-data';
+import { listCategories } from '@/lib/repository';
+import type { Category } from '@/lib/model';
 import { currentSession } from '@/lib/session';
 import type { PhotographerPhoto } from '@/lib/photographer-panel';
 
@@ -28,8 +30,12 @@ export default async function EditarFotoPage({
     redirect(`/login?next=${encodeURIComponent(`/dashboard/foto/${id}`)}`);
   }
 
-  const ehAutor = painelDoAutor(session.email) !== null;
-  const photo = ehAutor ? fotoDoAutor(session.email, id) : undefined;
+  const [painel, categories] = await Promise.all([
+    painelDoAutor(session.sub),
+    listCategories(),
+  ]);
+  const ehAutor = painel !== null;
+  const photo = fotoDoAutor(painel, id);
   if (ehAutor && !photo) notFound();
 
   return (
@@ -46,7 +52,7 @@ export default async function EditarFotoPage({
             Minhas fotos
           </Link>
 
-          {photo ? <Edicao photo={photo} /> : <SemAutor />}
+          {photo ? <Edicao photo={photo} categories={categories} /> : <SemAutor />}
         </div>
       </main>
 
@@ -55,7 +61,13 @@ export default async function EditarFotoPage({
   );
 }
 
-function Edicao({ photo }: { photo: PhotographerPhoto }) {
+function Edicao({
+  photo,
+  categories,
+}: {
+  photo: PhotographerPhoto;
+  categories: Category[];
+}) {
   return (
     <>
       <h1 className="mt-5 font-serif text-[clamp(1.9rem,5vw,3rem)] leading-tight font-medium tracking-[-0.02em] text-paper">
@@ -76,7 +88,7 @@ function Edicao({ photo }: { photo: PhotographerPhoto }) {
         .
       </p>
 
-      <EditPhotoScreen photo={photo} />
+      <EditPhotoScreen photo={photo} categories={categories} />
 
       <section className="mt-14 border-t border-paper/12 pt-7">
         <h2 className="font-mono text-[10px] tracking-[0.24em] text-paper-500 uppercase">

@@ -5,8 +5,7 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { LogoutButton } from '@/components/logout-button';
 import { IconDownload, IconImage, IconLicense } from '@/components/icons';
-import { ordersByUser } from '@/lib/mock-db';
-import { findPhoto } from '@/lib/mock-photos';
+import { findSoldPhoto, ordersByUser } from '@/lib/repository';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
 import { currentSession } from '@/lib/session';
 import { formatDate, formatPrice } from '@/lib/format';
@@ -15,17 +14,19 @@ export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Minha conta',
-  robots: { index: false, follow: false },
+  robots: { index: false, follow: false }, 
 };
 
 export default async function DashboardPage() {
   const session = await currentSession();
   if (!session) redirect(`/login?next=${encodeURIComponent('/dashboard')}`);
 
-  const orders = ordersByUser(session.sub).map((order) => ({
-    order,
-    photo: findPhoto(order.photoId),
-  }));
+  const orders = await Promise.all(
+    (await ordersByUser(session.sub)).map(async (order) => ({
+      order,
+      photo: await findSoldPhoto(order.photoId),
+    })),
+  );
 
   const totalPago = orders.reduce((soma, item) => soma + item.order.pricePaid, 0);
 

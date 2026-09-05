@@ -1,10 +1,34 @@
 import type { MetadataRoute } from 'next';
-import { mockPhotos } from '@/lib/mock-photos';
-import { mockPhotographers } from '@/lib/mock-photographers';
-import { mockCategories } from '@/lib/mock-categories';
+import { listCategories, listPhotographers, listPhotos } from '@/lib/repository';
 import { siteUrl } from '@/lib/site';
+import type { Category, Photographer, StoredPhoto } from '@/lib/model';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const dynamic = 'force-dynamic';
+
+interface Acervo {
+  photos: StoredPhoto[];
+  categories: Category[];
+  photographers: Photographer[];
+}
+
+const VAZIO: Acervo = { photos: [], categories: [], photographers: [] };
+
+async function acervo(): Promise<Acervo> {
+  try {
+    const [photos, categories, photographers] = await Promise.all([
+      listPhotos(),
+      listCategories(),
+      listPhotographers(),
+    ]);
+    return { photos, categories, photographers };
+  } catch {
+    return VAZIO;
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const { photos, categories, photographers } = await acervo();
+
   const url = (caminho: string) => `${siteUrl()}${caminho}`;
 
   return [
@@ -15,19 +39,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: url('/termos'), changeFrequency: 'yearly', priority: 0.2 },
     { url: url('/privacidade'), changeFrequency: 'yearly', priority: 0.2 },
 
-    ...mockCategories.map((categoria) => ({
+    ...categories.map((categoria) => ({
       url: url(`/explorar?categoria=${categoria.slug}`),
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     })),
 
-    ...mockPhotographers.map((photographer) => ({
+    ...photographers.map((photographer) => ({
       url: url(`/perfil/${photographer.id}`),
       changeFrequency: 'weekly' as const,
       priority: 0.7,
     })),
 
-    ...mockPhotos.map((photo) => ({
+    ...photos.map((photo) => ({
       url: url(`/foto/${photo.id}`),
       changeFrequency: 'monthly' as const,
       priority: 0.8,

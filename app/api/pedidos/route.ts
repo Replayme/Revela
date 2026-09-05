@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createOrder, findOrder } from '@/lib/mock-db';
+import { createOrder, findOrder, findPhoto } from '@/lib/repository';
 import { UNIVERSAL_LICENSE } from '@/lib/license';
-import { findPhoto } from '@/lib/mock-photos';
+
 import { currentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -22,23 +22,26 @@ export async function POST(request: Request) {
   }
 
   const photoId = typeof body.photoId === 'string' ? body.photoId : '';
-  const photo = findPhoto(photoId);
+  const photo = await findPhoto(photoId);
 
   if (!photo) {
     return NextResponse.json({ error: 'PHOTO_NOT_FOUND' }, { status: 404 });
   }
 
-  const existing = findOrder(session.sub, photo.id);
+  const existing = await findOrder(session.sub, photo.id);
   if (existing) {
     return NextResponse.json({ order: existing, alreadyOwned: true });
   }
 
-  const order = createOrder({
+  const { order, created } = await createOrder({
     userId: session.sub,
     photoId: photo.id,
     pricePaid: photo.price,
     licenseVersion: UNIVERSAL_LICENSE.version,
   });
 
-  return NextResponse.json({ order, alreadyOwned: false }, { status: 201 });
+  return NextResponse.json(
+    { order, alreadyOwned: !created },
+    { status: created ? 201 : 200 },
+  );
 }

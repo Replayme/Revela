@@ -5,12 +5,9 @@ import {
   clientIp,
   registerFailure,
 } from '@/lib/rate-limit';
-import {
-  findUserByEmail,
-  issueSessionToken,
-  sessionMaxAgeSeconds,
-  verifyPassword,
-} from '@/lib/mock-db';
+import { verifyPassword } from '@/lib/password';
+import { findUserByEmail } from '@/lib/repository';
+import { issueSessionToken, sessionMaxAgeSeconds } from '@/lib/tokens';
 import { isValidEmail, validatePassword } from '@/lib/validation';
 
 export const runtime = 'nodejs';
@@ -64,7 +61,7 @@ export async function POST(request: Request) {
 
   await new Promise((resolve) => setTimeout(resolve, FAKE_LATENCY_MS));
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
 
   if (!user) {
     const after = registerFailure(ip, email);

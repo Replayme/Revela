@@ -2,7 +2,7 @@
 
 import { PhotoCard, PhotoCardSkeleton } from './photo-card';
 import { IconImage } from './icons';
-import type { Photo } from '@/lib/mock-photos';
+import type { Photo } from '@/lib/model';
 
 const GRIDS = {
   wide: 'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',

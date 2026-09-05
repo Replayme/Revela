@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { FilmFrame } from './film-frame';
 import { IconStar } from './icons';
 import { formatCount, formatRating } from '@/lib/format';
-import type { Photographer } from '@/lib/mock-photographers';
+import type { Photographer } from '@/lib/model';
 
 const SIZES = '(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw';
 

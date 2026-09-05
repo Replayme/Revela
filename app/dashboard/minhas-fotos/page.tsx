@@ -6,7 +6,7 @@ import { PhotographerStats } from '@/components/photographer-stats';
 import { PhotographerPhotoCard } from '@/components/photographer-photo-card';
 import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft, IconImage, IconLicense, IconUpload } from '@/components/icons';
-import { painelDoAutor } from '@/lib/mock-photographer-panel';
+import { painelDoAutor } from '@/lib/photographer-panel-data';
 import { summarize } from '@/lib/photographer-panel';
 import { currentSession } from '@/lib/session';
 
@@ -23,7 +23,7 @@ export default async function MinhasFotosPage() {
     redirect(`/login?next=${encodeURIComponent('/dashboard/minhas-fotos')}`);
   }
 
-  const painel = painelDoAutor(session.email);
+  const painel = await painelDoAutor(session.sub);
 
   return (
     <div className="tex-cyanotype flex min-h-dvh flex-col bg-prussia-900">
@@ -61,7 +61,7 @@ export default async function MinhasFotosPage() {
   );
 }
 
-function Painel({ painel }: { painel: NonNullable<ReturnType<typeof painelDoAutor>> }) {
+function Painel({ painel }: { painel: NonNullable<Awaited<ReturnType<typeof painelDoAutor>>> }) {
   const { photographer, photos } = painel;
   const resumo = summarize(photos);
 

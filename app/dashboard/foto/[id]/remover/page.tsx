@@ -6,7 +6,7 @@ import { SiteFooter } from '@/components/site-footer';
 import { RemovePhotoScreen } from '@/components/remove-photo-screen';
 import { NotAnAuthor } from '@/components/not-an-author';
 import { IconArrowLeft } from '@/components/icons';
-import { fotoDoAutor, painelDoAutor } from '@/lib/mock-photographer-panel';
+import { fotoDoAutor, painelDoAutor } from '@/lib/photographer-panel-data';
 import { formatPrice } from '@/lib/format';
 import { currentSession } from '@/lib/session';
 
@@ -29,8 +29,9 @@ export default async function RemoverFotoPage({
     redirect(`/login?next=${encodeURIComponent(`/dashboard/foto/${id}/remover`)}`);
   }
 
-  const ehAutor = painelDoAutor(session.email) !== null;
-  const photo = ehAutor ? fotoDoAutor(session.email, id) : undefined;
+  const painel = await painelDoAutor(session.sub);
+  const ehAutor = painel !== null;
+  const photo = fotoDoAutor(painel, id);
   if (ehAutor && !photo) notFound();
 
   return (

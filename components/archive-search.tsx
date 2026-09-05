@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { PhotoGrid } from './photo-grid';
 import { useFavorites } from './use-favorites';
 import { IconSearch } from './icons';
-import { mockPhotos, type Photo } from '@/lib/mock-photos';
-import { mockCategories, slugify } from '@/lib/mock-categories';
+import { slugify } from '@/lib/slug';
+import type { Category, Photo } from '@/lib/model';
 import { formatPrice } from '@/lib/format';
 
 type Ordenacao = 'relevancia' | 'preco-asc' | 'preco-desc' | 'avaliacao';
@@ -22,8 +22,6 @@ const ORIENTACOES: { id: Photo['orientation']; nome: string }[] = [
   { id: 'horizontal', nome: 'Horizontal' },
   { id: 'vertical', nome: 'Vertical' },
 ];
-
-const PRECO_MAX = Math.ceil(Math.max(...mockPhotos.map((p) => p.price)) / 10) * 10;
 
 const normalizar = (valor: string) =>
   valor
@@ -42,16 +40,30 @@ function combina(photo: Photo, termo: string): boolean {
     .every((palavra) => alvo.includes(palavra));
 }
 
-export function ArchiveSearch() {
+export function ArchiveSearch({
+  photos,
+  categories,
+}: {
+  photos: Photo[];
+  categories: Category[];
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const { favorites, toggle: alternarFavorita } = useFavorites();
+
+  const precoTeto = useMemo(
+    () =>
+      photos.length === 0
+        ? 100
+        : Math.ceil(Math.max(...photos.map((foto) => foto.price)) / 10) * 10,
+    [photos],
+  );
 
   const termo = params.get('termo') ?? '';
   const categoria = params.get('categoria') ?? '';
   const orientacao = params.get('orientacao') ?? '';
   const ordenar = (params.get('ordenar') ?? 'relevancia') as Ordenacao;
-  const precoMax = Number(params.get('precoMax')) || PRECO_MAX;
+  const precoMax = Number(params.get('precoMax')) || precoTeto;
 
   const [rascunho, setRascunho] = useState(termo);
   const campoRef = useRef<HTMLInputElement>(null);
@@ -82,7 +94,7 @@ export function ArchiveSearch() {
   }, [rascunho, termo, atualizar]);
 
   const resultados = useMemo(() => {
-    const filtradas = mockPhotos.filter(
+    const filtradas = photos.filter(
       (photo) =>
         combina(photo, termo) &&
         (!categoria || slugify(photo.category) === categoria) &&
@@ -103,7 +115,7 @@ export function ArchiveSearch() {
   }, [termo, categoria, orientacao, precoMax, ordenar]);
 
   const filtrando =
-    Boolean(termo || categoria || orientacao) || precoMax < PRECO_MAX;
+    Boolean(termo || categoria || orientacao) || precoMax < precoTeto;
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-10 sm:px-6 sm:py-14 lg:px-10">
@@ -111,7 +123,7 @@ export function ArchiveSearch() {
         O acervo
       </h1>
       <p className="mt-3 max-w-[56ch] text-paper-300">
-        {mockPhotos.length} fotos de fotógrafos independentes. Todas saem com a
+        {photos.length} fotos de fotógrafos independentes. Todas saem com a
         mesma licença — uso ilimitado, para sempre. O que muda é o preço do
         arquivo.
       </p>
@@ -143,9 +155,11 @@ export function ArchiveSearch() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
         <Filtros
+          categorias={categories}
           categoria={categoria}
           orientacao={orientacao}
           precoMax={precoMax}
+          precoTeto={precoTeto}
           filtrando={filtrando}
           aoMudar={atualizar}
           aoLimpar={() => {
@@ -156,6 +170,7 @@ export function ArchiveSearch() {
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-paper/12 pb-4">
+
             <p aria-live="polite" className="text-sm text-paper-300">
               <strong className="font-mono font-semibold text-paper tabular-nums">
                 {resultados.length}
@@ -195,21 +210,27 @@ export function ArchiveSearch() {
 }
 
 function Filtros({
+  categorias,
   categoria,
   orientacao,
   precoMax,
+  precoTeto,
   filtrando,
   aoMudar,
   aoLimpar,
 }: {
+  categorias: Category[];
   categoria: string;
   orientacao: string;
   precoMax: number;
+
+  precoTeto: number;
   filtrando: boolean;
   aoMudar: (mudancas: Record<string, string | null>) => void;
   aoLimpar: () => void;
 }) {
   return (
+
     <details className="group border border-paper/12 lg:border-0 [&>summary]:lg:hidden [&:not([open])>div]:lg:block">
       <summary className="cursor-pointer list-none px-4 py-3 text-[11px] font-semibold tracking-[0.16em] text-paper uppercase marker:content-none">
         Filtros
@@ -247,7 +268,7 @@ function Filtros({
                 Todas
               </Opcao>
             </li>
-            {mockCategories.map((item) => (
+            {categorias.map((item) => (
               <li key={item.slug}>
                 <Opcao
                   ativa={categoria === item.slug}
@@ -295,13 +316,13 @@ function Filtros({
           <input
             type="range"
             min={10}
-            max={PRECO_MAX}
+            max={precoTeto}
             step={10}
             value={precoMax}
             onChange={(event) =>
               aoMudar({
                 precoMax:
-                  Number(event.target.value) >= PRECO_MAX
+                  Number(event.target.value) >= precoTeto
                     ? null
                     : event.target.value,
               })
@@ -311,7 +332,7 @@ function Filtros({
           />
           <p className="mt-2 font-mono text-sm text-paper tabular-nums">
             {formatPrice(precoMax)}
-            {precoMax >= PRECO_MAX && (
+            {precoMax >= precoTeto && (
               <span className="ml-2 font-sans text-xs text-paper-500">
                 (tudo)
               </span>

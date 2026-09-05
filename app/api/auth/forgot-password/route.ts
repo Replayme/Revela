@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkLimits, clientIp, registerFailure } from '@/lib/rate-limit';
-import { createResetToken, findUserByEmail } from '@/lib/mock-db';
+import { createResetToken, findUserByEmail } from '@/lib/repository';
 import { isValidEmail } from '@/lib/validation';
 
 export const runtime = 'nodejs';
@@ -35,16 +35,18 @@ export async function POST(request: Request) {
 
   await new Promise((resolve) => setTimeout(resolve, 500));
 
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   let devResetUrl: string | undefined;
 
   if (user && !user.disabled) {
-    const token = createResetToken(user.id);
+    const token = await createResetToken(user.id);
+
     devResetUrl = `/redefinir-senha?token=${token}`;
   }
 
   return NextResponse.json({
     ok: true,
+
     ...(process.env.NODE_ENV !== 'production' && devResetUrl
       ? { devResetUrl }
       : {}),
