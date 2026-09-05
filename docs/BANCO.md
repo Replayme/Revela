@@ -243,15 +243,31 @@ pelo host da URL — endpoint `*.neon.tech` vai pelo driver HTTP, qualquer outro
 host vai pelo `pg`, por TCP. É a mesma decisão em um lugar só, e o
 `store-postgres.ts` não sabe qual dos dois está atendendo.
 
-O `npm run db:migrate` é a exceção: ele usa só o driver HTTP. Para um Postgres
-comum, aplique os arquivos direto — é o que os testes deste repositório fazem:
+O `npm run db:migrate` escolhe o cliente pela mesma regra, então roda contra os
+dois. Sem `db/003` o acervo fica vazio: as tabelas `photographers` e `photos`
+nascem lá.
 
-```bash
-for f in db/00*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"; done
-```
+### Migração pede conexão direta, não a com pooler
 
-Sem `db/003` e `db/004` o acervo fica vazio: as tabelas `photographers` e
-`photos` nascem nelas.
+O Neon entrega duas strings para o mesmo banco: a **pooled** (host com sufixo
+`-pooler`) e a **direta**. O `neon env pull` escreve as duas, como
+`DATABASE_URL` e `DATABASE_URL_UNPOOLED`.
+
+A aplicação usa a pooled; **a migração usa a direta**. O pooler roda em modo
+transação e não sustenta estado de sessão, e as falhas daí não dizem "pooling"
+em lugar nenhum — dizem `prepared statement "s0" already exists`, ou um
+`SET search_path` que não sobrevive à própria transação e vira
+`relation "..." does not exist`.
+
+Por isso `scripts/migrate.mjs` prefere `DATABASE_URL_UNPOOLED` quando ela
+existe, e avisa se a URL que sobrou tiver `-pooler` no host.
+
+### Cada arquivo é uma transação
+
+Ou o arquivo inteiro entrou e ficou registrado em `schema_migrations`, ou não
+entrou nada. No Postgres o DDL é transacional, então isso vale também para
+`CREATE TABLE`: uma migração que falha no meio não deixa metade das tabelas
+criadas, e as que passaram antes dela continuam aplicadas.
 
 ---
 

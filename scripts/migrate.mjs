@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { neon } from '@neondatabase/serverless';
+import pg from 'pg';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -18,10 +19,22 @@ for (const arquivo of ['.env.local', '.env']) {
   }
 }
 
-const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+const url =
+  process.env.DATABASE_URL_UNPOOLED ||
+  process.env.POSTGRES_URL_NON_POOLING ||
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL;
+
 if (!url) {
   console.error('Falta DATABASE_URL. Ver docs/BANCO.md e .env.example.');
   process.exit(1);
+}
+
+if (/-pooler\./.test(url)) {
+  console.warn(
+    'Aviso: a URL aponta para o endpoint com pooler. Migração pede conexão direta —\n' +
+      'defina DATABASE_URL_UNPOOLED (o `neon env pull` escreve as duas). Ver docs/BANCO.md.',
+  );
 }
 
 function separarComandos(sql) {
@@ -76,9 +89,45 @@ function separarComandos(sql) {
   return comandos.map((c) => c.trim()).filter(Boolean);
 }
 
-const sql = neon(url);
+function ehNeon(u) {
+  try {
+    return new URL(u).hostname.endsWith('.neon.tech');
+  } catch {
+    return false;
+  }
+}
 
-await sql.query(`
+const viaNeon = ehNeon(url);
+const cliente = viaNeon ? neon(url) : new pg.Pool({ connectionString: url, max: 1 });
+
+async function consultar(texto, params = []) {
+  if (viaNeon) return cliente.query(texto, params);
+  return (await cliente.query(texto, params)).rows;
+}
+
+async function emTransacao(comandos, nome) {
+  if (viaNeon) {
+    return cliente.transaction((txn) => [
+      ...comandos.map((comando) => txn.query(comando)),
+      txn.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [nome]),
+    ]);
+  }
+
+  const conexao = await cliente.connect();
+  try {
+    await conexao.query('BEGIN');
+    for (const comando of comandos) await conexao.query(comando);
+    await conexao.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [nome]);
+    await conexao.query('COMMIT');
+  } catch (erro) {
+    await conexao.query('ROLLBACK').catch(() => {});
+    throw erro;
+  } finally {
+    conexao.release();
+  }
+}
+
+await consultar(`
   CREATE TABLE IF NOT EXISTS schema_migrations (
     filename    TEXT        PRIMARY KEY,
     applied_at  TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -86,7 +135,7 @@ await sql.query(`
 `);
 
 const aplicadas = new Set(
-  (await sql.query('SELECT filename FROM schema_migrations')).map((l) => l.filename),
+  (await consultar('SELECT filename FROM schema_migrations')).map((l) => l.filename),
 );
 
 const comSeed = process.argv.includes('--seed');
@@ -103,10 +152,7 @@ for (const nome of arquivos) {
   const comandos = separarComandos(await readFile(join(raiz, 'db', nome), 'utf8'));
 
   try {
-    await sql.transaction((txn) => [
-      ...comandos.map((comando) => txn.query(comando)),
-      txn.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [nome]),
-    ]);
+    await emTransacao(comandos, nome);
   } catch (erro) {
     console.error(`✗ ${nome}`);
     console.error(`  ${erro.message}`);
@@ -122,3 +168,5 @@ console.log(
     ? 'Nada a aplicar — o banco já está atualizado.'
     : `${aplicou} migração(ões) aplicada(s).`,
 );
+
+if (!viaNeon) await cliente.end();
