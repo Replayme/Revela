@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { findOrderById, findSoldPhoto } from '@/lib/repository';
-
+import { assinarEntrega } from '@/lib/blob';
 import { currentSession } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -26,7 +26,17 @@ export async function GET(
     return NextResponse.json({ error: 'PHOTO_NOT_FOUND' }, { status: 404 });
   }
 
-  return NextResponse.redirect(photo.fullUrl, {
+  let destino = photo.fullUrl;
+
+  if (photo.storageKey) {
+    try {
+      destino = await assinarEntrega(photo.storageKey);
+    } catch {
+      return NextResponse.json({ error: 'STORAGE_UNAVAILABLE' }, { status: 503 });
+    }
+  }
+
+  return NextResponse.redirect(destino, {
     status: 307,
     headers: { 'Cache-Control': 'no-store' },
   });

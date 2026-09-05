@@ -177,6 +177,10 @@ REVEAL_ACCOUNT_EXISTENCE=true   # false = "E-mail ou senha incorretos" nos dois 
 # Na Vercel a integração do Neon cria esta variável sozinha.
 # Ver docs/BANCO.md e .env.example.
 DATABASE_URL=
+
+# Vercel Blob, para os arquivos das fotos. Sem ela, publicar foto responde 503;
+# o resto do site funciona. Ver docs/API.md.
+BLOB_READ_WRITE_TOKEN=
 ```
 
 Sobre `REVEAL_ACCOUNT_EXISTENCE`: mensagens distintas são melhores de usar e

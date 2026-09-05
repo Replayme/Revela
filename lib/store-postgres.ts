@@ -71,6 +71,7 @@ interface PhotoRow {
   height: number;
   thumbnail_url: string;
   full_url: string;
+  storage_key: string | null;
   created_at: Date;
   updated_at: Date | null;
 }
@@ -92,6 +93,7 @@ function toPhoto(row: PhotoRow): StoredPhoto {
     status: row.status as StoredPhoto['status'],
     createdAt: row.created_at.getTime(),
     ...(row.updated_at ? { updatedAt: row.updated_at.getTime() } : {}),
+    ...(row.storage_key ? { storageKey: row.storage_key } : {}),
   };
 }
 
@@ -118,7 +120,7 @@ function toPhotographer(row: PhotographerRow): Photographer {
 const PHOTO_SELECT = `
   SELECT f.id, f.photographer_id, a.name AS photographer_name, f.title,
          f.category, f.price, f.rating, f.status, f.width, f.height,
-         f.thumbnail_url, f.full_url, f.created_at, f.updated_at
+         f.thumbnail_url, f.full_url, f.storage_key, f.created_at, f.updated_at
     FROM photos f
     JOIN photographers a ON a.id = f.photographer_id`;
 
@@ -425,7 +427,7 @@ export const postgresStore: Store = {
        )
        SELECT f.id, f.photographer_id, a.name AS photographer_name, f.title,
               f.category, f.price, f.rating, f.status, f.width, f.height,
-              f.thumbnail_url, f.full_url, f.created_at, f.updated_at
+              f.thumbnail_url, f.full_url, f.storage_key, f.created_at, f.updated_at
          FROM nova f
          JOIN photographers a ON a.id = f.photographer_id`,
       [
@@ -470,7 +472,7 @@ export const postgresStore: Store = {
        )
        SELECT f.id, f.photographer_id, a.name AS photographer_name, f.title,
               f.category, f.price, f.rating, f.status, f.width, f.height,
-              f.thumbnail_url, f.full_url, f.created_at, f.updated_at
+              f.thumbnail_url, f.full_url, f.storage_key, f.created_at, f.updated_at
          FROM atualizada f
          JOIN photographers a ON a.id = f.photographer_id`,
       [

@@ -158,9 +158,12 @@ O arquivo **não passa pelas rotas**: função da Vercel recusa corpo acima de
 autor, porque o caminho vem do cliente e o id do autor vem da sessão. Ver
 docs/API.md.
 
-O bucket ainda não existe. Quando existir, `full_url` deixa de ser endereço
-fixo e passa a ser resolvido por URL assinada de vida curta a partir de
-`storage_key`.
+`full_url` guarda a URL do original no bucket, que por ser privado não abre
+sozinha; quem resolve é `GET /api/pedidos/<id>/arquivo`, assinando uma URL de 5
+minutos a partir de `storage_key`. Para as fotos de demonstração, que não têm
+`storage_key`, a rota redireciona direto para `full_url` — é o mesmo caminho de
+antes, e é por isso que o acervo de demonstração continua funcionando sem
+bucket nenhum.
 
 ### Um comando por consulta
 

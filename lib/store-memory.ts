@@ -279,6 +279,7 @@ export const memoryStore: Store = {
       orientation: input.height > input.width ? 'vertical' : 'horizontal',
       status: 'publicada',
       createdAt: Date.now(),
+      storageKey: input.storageKey,
     };
 
     store.photos.push(foto);

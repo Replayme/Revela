@@ -11,6 +11,11 @@ import {
 import Image from 'next/image';
 import { Alert, SubmitButton, TextField } from './form';
 import { IconImage, IconUpload } from './icons';
+import {
+  LADO_MINIMO,
+  TAMANHO_MAX,
+  TIPOS_ACEITOS,
+} from '@/lib/blob-paths';
 import type { Category } from '@/lib/model';
 import { formatFileSize, formatPrice } from '@/lib/format';
 
@@ -26,10 +31,9 @@ export interface PhotoDraft {
   orientation: 'horizontal' | 'vertical';
 }
 
-const TIPOS_ACEITOS = ['image/jpeg', 'image/png'];
-const TAMANHO_MAX = 25 * 1024 * 1024;
 
-const LADO_MINIMO = 1600;
+
+
 
 function parsePrice(valor: string): number {
   const limpo = valor.replace(/\s/g, '').replace(',', '.');

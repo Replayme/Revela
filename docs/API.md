@@ -474,8 +474,54 @@ A foto entra como `publicada`, não `em-analise`: não há curadoria, e uma fila
 sem quem analise seria uma foto invisível para sempre. O padrão da coluna
 continua `rascunho`, que é o valor seguro para quem inserir sem dizer nada.
 
-**Ainda falta o bucket.** Enquanto ele não existir, o navegador não tem para
-onde mandar o arquivo, e a tela de envio diz isso na entrada.
+### `POST /api/fotos/upload` — autoriza o navegador a enviar
+
+Não recebe nem devolve arquivo: emite um token de curta duração que permite ao
+navegador escrever **um caminho específico** no bucket.
+
+| HTTP | `error` | Quando |
+| ---- | ------- | ------ |
+| 200  | —       | `{ clientToken }` para o `upload()` do `@vercel/blob/client` |
+| 400  | `UPLOAD_REJECTED` | Caminho fora do prefixo do autor |
+| 401  | `UNAUTHENTICATED` | Sem sessão |
+| 403  | `NOT_A_PHOTOGRAPHER` | A conta não é de autor |
+| 503  | `STORAGE_UNAVAILABLE` | Sem `BLOB_READ_WRITE_TOKEN` |
+
+O token sai com o caminho fixado e mais dois limites, diferentes conforme o
+prefixo:
+
+| Prefixo | Tipos | Máximo |
+| --- | --- | --- |
+| `fotos/<autor>/` (original) | `image/jpeg`, `image/png` | 25 MB |
+| `previews/<autor>/` (prévia) | `image/jpeg`, `image/webp` | 4 MB |
+
+**O prefixo por autor é a fronteira entre autores dentro do bucket**, e sai da
+sessão — nunca do corpo da requisição. É ele que impede alguém de escrever, ou
+de registrar como sua, a foto de outra pessoa.
+
+### Dois arquivos por foto, e por quê
+
+O **original** vai como `private`: não tem URL pública, e só sai por
+`GET /api/pedidos/<id>/arquivo`, que assina uma URL de 5 minutos. A **prévia**
+vai como `public`, porque é ela que o acervo mostra para quem ainda não comprou.
+
+A prévia é gerada **no navegador** (canvas, 1600px no lado maior, JPEG q82).
+A alternativa era o `putImage` do SDK, que otimiza no servidor — foi descartada
+porque exige autenticação OIDC além do token de leitura/escrita e é cobrada
+como transformação de imagem, duas dependências a mais para um arquivo que é
+só a vitrine.
+
+**Limitação conhecida:** o token não consegue fixar `access`; quem escolhe
+público ou privado é a chamada do cliente. Um autor que alterasse o próprio
+código para enviar o original como público exporia **o próprio** arquivo — o
+prefixo continua impedindo que ele alcance o de outra pessoa. Se isso passar a
+importar, o caminho é conferir o `access` no registro e recusar.
+
+### A ordem, e o que acontece se quebrar no meio
+
+Prévia → original → `POST /api/fotos`. Se a última etapa falhar, ficam dois
+arquivos órfãos no bucket, que são lixo barato e limpável; a ordem contrária
+deixaria no acervo uma foto apontando para arquivo inexistente.
 
 ### `GET /api/fotos` — ainda não existe, e nasce paginado
 

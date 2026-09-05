@@ -56,8 +56,8 @@ export type PhotoStatus = 'rascunho' | 'em-analise' | 'publicada';
 export interface StoredPhoto extends Photo {
   status: PhotoStatus;
   createdAt: number;
-
   updatedAt?: number;
+  storageKey?: string;
 }
 
 export interface NewPhoto {

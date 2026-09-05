@@ -52,7 +52,10 @@ export default async function NovaFotoPage() {
                 para sempre. O que muda de uma para a outra é o preço do
                 arquivo, e ele é seu.
               </p>
-              <NewPhotoScreen categories={categories} />
+              <NewPhotoScreen
+                categories={categories}
+                photographerId={painel.photographer.id}
+              />
             </>
           ) : (
             <>
